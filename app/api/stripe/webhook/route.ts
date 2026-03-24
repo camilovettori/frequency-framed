@@ -1,8 +1,11 @@
 import Stripe from "stripe";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { Resend } from "resend";
 import { stripe } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 type CustomerRow = {
   id: string;
@@ -21,6 +24,17 @@ type ArtworkRow = {
 
 function unique(values: string[]) {
   return [...new Set(values)];
+}
+
+function formatMoneyFromCents(cents: number, currency = "EUR") {
+  return new Intl.NumberFormat("en-IE", {
+    style: "currency",
+    currency: currency.toUpperCase(),
+  }).format(cents / 100);
+}
+
+function formatAddress(parts: Array<string | null | undefined>) {
+  return parts.filter(Boolean).join(", ");
 }
 
 export async function POST(request: Request) {
@@ -300,6 +314,90 @@ export async function POST(request: Request) {
             { error: "Failed marking artworks as sold." },
             { status: 500 }
           );
+        }
+
+        const formattedTotal = formatMoneyFromCents(amountTotalCents, currency);
+        const shippingAddress = formatAddress([
+          shippingAddressLine1,
+          shippingAddressLine2,
+          shippingCity,
+          shippingCounty,
+          shippingPostalCode,
+          shippingCountry,
+        ]);
+
+        const itemsText = artworks
+          .map(
+            (artwork) =>
+              `- ${artwork.title} (${formatMoneyFromCents(
+                artwork.price_cents,
+                currency
+              )})`
+          )
+          .join("\n");
+
+        const ownerEmail = process.env.CONTACT_TO_EMAIL;
+
+        if (customerEmail) {
+          try {
+            await resend.emails.send({
+              from: "Frequency Framed <onboarding@resend.dev>",
+              to: customerEmail,
+              subject: "Your Frequency Framed order is confirmed",
+              text: `Hello ${customerFullName || "there"},
+
+Thank you for your purchase from Frequency Framed.
+
+Order ID: ${orderId}
+Payment reference: ${paymentIntentId}
+
+Items:
+${itemsText}
+
+Total:
+${formattedTotal}
+
+Delivery address:
+${shippingAddress || "No delivery address provided"}
+
+We will contact you if any further information is needed.
+
+Frequency Framed`,
+            });
+          } catch (emailError) {
+            console.error("Failed sending buyer email:", emailError);
+          }
+        }
+
+        if (ownerEmail) {
+          try {
+            await resend.emails.send({
+              from: "Frequency Framed <onboarding@resend.dev>",
+              to: ownerEmail,
+              replyTo: customerEmail || undefined,
+              subject: `New order received - ${formattedTotal}`,
+              text: `A new order has been placed on Frequency Framed.
+
+Order ID: ${orderId}
+Payment reference: ${paymentIntentId}
+
+Customer:
+Name: ${customerFullName || "N/A"}
+Email: ${customerEmail || "N/A"}
+Phone: ${customerPhone || "N/A"}
+
+Items:
+${itemsText}
+
+Total:
+${formattedTotal}
+
+Delivery address:
+${shippingAddress || "No delivery address provided"}`,
+            });
+          } catch (emailError) {
+            console.error("Failed sending owner email:", emailError);
+          }
         }
 
         console.log("✅ Order saved successfully from webhook:", {
