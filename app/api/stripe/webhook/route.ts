@@ -545,7 +545,7 @@ export async function POST(request: Request) {
         if (customerEmail) {
           try {
             await resend.emails.send({
-              from: "Frequency Framed <onboarding@resend.dev>",
+              from: "Frequency Framed <Hello@frequencyframed.ie>",
               to: customerEmail,
               subject: `Your Frequency Framed order ${orderNumber} is confirmed`,
               text: `Hello ${customerFullName || "there"},
@@ -586,7 +586,7 @@ Frequency Framed`,
         if (ownerEmail) {
           try {
             await resend.emails.send({
-              from: "Frequency Framed <onboarding@resend.dev>",
+              from: "Frequency Framed <Hello@frequencyframed.ie>",
               to: ownerEmail,
               replyTo: customerEmail || undefined,
               subject: `New order received - ${orderNumber}`,
