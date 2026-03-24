@@ -14,7 +14,6 @@ export default function StripeCheckoutForm() {
 
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [expressReady, setExpressReady] = useState(false);
 
   async function confirmWithElements() {
     if (!stripe || !elements) return;
@@ -41,9 +40,6 @@ export default function StripeCheckoutForm() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
-    if (!stripe || !elements) return;
-
     await confirmWithElements();
   }
 
@@ -61,14 +57,19 @@ export default function StripeCheckoutForm() {
               applePay: "black",
               googlePay: "black",
             },
+            paymentMethods: {
+              applePay: "always",
+              googlePay: "always",
+              link: "never",
+              paypal: "never",
+              amazonPay: "never",
+              klarna: "never",
+            },
             layout: {
               maxColumns: 2,
               maxRows: 1,
-              overflow: "auto",
+              overflow: "never",
             },
-          }}
-          onReady={({ availablePaymentMethods }) => {
-            setExpressReady(!!availablePaymentMethods);
           }}
           onConfirm={async () => {
             await confirmWithElements();
@@ -76,15 +77,26 @@ export default function StripeCheckoutForm() {
         />
       </div>
 
-      {!expressReady && (
-        <div className="text-sm text-[var(--muted)]">
-          Apple Pay and Google Pay will appear automatically when supported on
-          the current device/browser.
-        </div>
-      )}
-
       <div className="border border-[var(--border)] bg-white p-5">
-        <PaymentElement />
+        <PaymentElement
+          options={{
+            wallets: {
+              applePay: "never",
+              googlePay: "never",
+            },
+            terms: {
+              card: "never",
+            },
+            fields: {
+              billingDetails: {
+                name: "never",
+                email: "never",
+                phone: "never",
+                address: "never",
+              },
+            },
+          }}
+        />
       </div>
 
       <button
