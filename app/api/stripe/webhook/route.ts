@@ -37,6 +37,191 @@ function formatAddress(parts: Array<string | null | undefined>) {
   return parts.filter(Boolean).join(", ");
 }
 
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+async function generateOrderNumber() {
+  const { count, error } = await supabaseAdmin
+    .from("orders")
+    .select("*", { count: "exact", head: true });
+
+  if (error) {
+    throw error;
+  }
+
+  const next = (count ?? 0) + 1001;
+  return `FF-${next}`;
+}
+
+function buildBuyerEmailHtml(params: {
+  logoUrl: string;
+  customerName: string;
+  orderNumber: string;
+  paymentReference: string;
+  itemsHtml: string;
+  total: string;
+  shippingAddress: string;
+}) {
+  const {
+    logoUrl,
+    customerName,
+    orderNumber,
+    paymentReference,
+    itemsHtml,
+    total,
+    shippingAddress,
+  } = params;
+
+  return `
+  <div style="margin:0;padding:0;background:#f5f1eb;font-family:Georgia,serif;color:#4b3226;">
+    <div style="max-width:640px;margin:0 auto;padding:40px 20px;">
+      <div style="background:#ffffff;border:1px solid #e8ddd2;padding:40px;">
+        <div style="text-align:center;margin-bottom:32px;">
+          <img src="${logoUrl}" alt="Frequency Framed" style="max-width:160px;height:auto;" />
+        </div>
+
+        <p style="margin:0 0 10px;font-size:12px;letter-spacing:0.25em;text-transform:uppercase;color:#8c6f5b;">
+          Order Confirmed
+        </p>
+
+        <h1 style="margin:0 0 24px;font-size:38px;line-height:1.05;font-weight:400;color:#4b3226;">
+          Thank you for your purchase
+        </h1>
+
+        <p style="margin:0 0 24px;font-size:18px;line-height:1.7;color:#6f5647;">
+          Hello ${escapeHtml(customerName)},
+          <br /><br />
+          Your order has been confirmed successfully. Thank you for choosing a piece from Frequency Framed.
+        </p>
+
+        <div style="border:1px solid #e8ddd2;background:#faf7f2;padding:20px;margin:0 0 28px;">
+          <p style="margin:0 0 8px;font-size:14px;color:#6f5647;"><strong>Order number:</strong> ${escapeHtml(orderNumber)}</p>
+          <p style="margin:0;font-size:14px;color:#6f5647;"><strong>Payment reference:</strong> ${escapeHtml(paymentReference)}</p>
+        </div>
+
+        <h2 style="margin:0 0 14px;font-size:18px;font-weight:400;color:#4b3226;">Order summary</h2>
+        <div style="border-top:1px solid #e8ddd2;border-bottom:1px solid #e8ddd2;padding:18px 0;margin-bottom:24px;">
+          ${itemsHtml}
+        </div>
+
+        <div style="margin-bottom:24px;">
+          <p style="margin:0 0 8px;font-size:14px;letter-spacing:0.18em;text-transform:uppercase;color:#8c6f5b;">
+            Total
+          </p>
+          <p style="margin:0;font-size:28px;color:#4b3226;">${escapeHtml(total)}</p>
+        </div>
+
+        <div style="margin-bottom:28px;">
+          <p style="margin:0 0 8px;font-size:14px;letter-spacing:0.18em;text-transform:uppercase;color:#8c6f5b;">
+            Delivery Address
+          </p>
+          <p style="margin:0;font-size:16px;line-height:1.7;color:#6f5647;">
+            ${escapeHtml(shippingAddress || "No delivery address provided")}
+          </p>
+        </div>
+
+        <p style="margin:0;font-size:16px;line-height:1.7;color:#6f5647;">
+          We will contact you if any further information is needed.
+        </p>
+
+        <div style="margin-top:32px;padding-top:24px;border-top:1px solid #e8ddd2;">
+          <p style="margin:0;font-size:14px;color:#8c6f5b;">
+            Frequency Framed
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildOwnerEmailHtml(params: {
+  logoUrl: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  orderNumber: string;
+  paymentReference: string;
+  itemsHtml: string;
+  total: string;
+  shippingAddress: string;
+}) {
+  const {
+    logoUrl,
+    customerName,
+    customerEmail,
+    customerPhone,
+    orderNumber,
+    paymentReference,
+    itemsHtml,
+    total,
+    shippingAddress,
+  } = params;
+
+  return `
+  <div style="margin:0;padding:0;background:#f5f1eb;font-family:Georgia,serif;color:#4b3226;">
+    <div style="max-width:640px;margin:0 auto;padding:40px 20px;">
+      <div style="background:#ffffff;border:1px solid #e8ddd2;padding:40px;">
+        <div style="text-align:center;margin-bottom:32px;">
+          <img src="${logoUrl}" alt="Frequency Framed" style="max-width:160px;height:auto;" />
+        </div>
+
+        <p style="margin:0 0 10px;font-size:12px;letter-spacing:0.25em;text-transform:uppercase;color:#8c6f5b;">
+          New Order Received
+        </p>
+
+        <h1 style="margin:0 0 24px;font-size:38px;line-height:1.05;font-weight:400;color:#4b3226;">
+          A new order has arrived
+        </h1>
+
+        <div style="border:1px solid #e8ddd2;background:#faf7f2;padding:20px;margin:0 0 28px;">
+          <p style="margin:0 0 8px;font-size:14px;color:#6f5647;"><strong>Order number:</strong> ${escapeHtml(orderNumber)}</p>
+          <p style="margin:0;font-size:14px;color:#6f5647;"><strong>Payment reference:</strong> ${escapeHtml(paymentReference)}</p>
+        </div>
+
+        <h2 style="margin:0 0 14px;font-size:18px;font-weight:400;color:#4b3226;">Customer</h2>
+        <div style="margin-bottom:28px;">
+          <p style="margin:0 0 6px;font-size:16px;line-height:1.7;color:#6f5647;">
+            <strong>Name:</strong> ${escapeHtml(customerName || "N/A")}
+          </p>
+          <p style="margin:0 0 6px;font-size:16px;line-height:1.7;color:#6f5647;">
+            <strong>Email:</strong> ${escapeHtml(customerEmail || "N/A")}
+          </p>
+          <p style="margin:0;font-size:16px;line-height:1.7;color:#6f5647;">
+            <strong>Phone:</strong> ${escapeHtml(customerPhone || "N/A")}
+          </p>
+        </div>
+
+        <h2 style="margin:0 0 14px;font-size:18px;font-weight:400;color:#4b3226;">Items</h2>
+        <div style="border-top:1px solid #e8ddd2;border-bottom:1px solid #e8ddd2;padding:18px 0;margin-bottom:24px;">
+          ${itemsHtml}
+        </div>
+
+        <div style="margin-bottom:24px;">
+          <p style="margin:0 0 8px;font-size:14px;letter-spacing:0.18em;text-transform:uppercase;color:#8c6f5b;">
+            Total
+          </p>
+          <p style="margin:0;font-size:28px;color:#4b3226;">${escapeHtml(total)}</p>
+        </div>
+
+        <div style="margin-bottom:28px;">
+          <p style="margin:0 0 8px;font-size:14px;letter-spacing:0.18em;text-transform:uppercase;color:#8c6f5b;">
+            Delivery Address
+          </p>
+          <p style="margin:0;font-size:16px;line-height:1.7;color:#6f5647;">
+            ${escapeHtml(shippingAddress || "No delivery address provided")}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
 export async function POST(request: Request) {
   const body = await request.text();
   const signature = (await headers()).get("stripe-signature");
@@ -115,7 +300,7 @@ export async function POST(request: Request) {
         const { data: existingOrder, error: existingOrderError } =
           await supabaseAdmin
             .from("orders")
-            .select("id, stripe_payment_intent_id")
+            .select("id, stripe_payment_intent_id, order_number")
             .eq("stripe_payment_intent_id", paymentIntentId)
             .maybeSingle();
 
@@ -254,9 +439,12 @@ export async function POST(request: Request) {
           }
         }
 
+        const orderNumber = await generateOrderNumber();
+
         const { data: createdOrder, error: createOrderError } = await supabaseAdmin
           .from("orders")
           .insert({
+            order_number: orderNumber,
             stripe_payment_intent_id: paymentIntentId,
             customer_id: customerId,
             amount_total_cents: amountTotalCents,
@@ -271,7 +459,7 @@ export async function POST(request: Request) {
             shipping_postal_code: shippingPostalCode || null,
             shipping_country: shippingCountry || null,
           })
-          .select("id")
+          .select("id, order_number")
           .single();
 
         if (createOrderError || !createdOrder) {
@@ -336,18 +524,35 @@ export async function POST(request: Request) {
           )
           .join("\n");
 
+        const itemsHtml = artworks
+          .map(
+            (artwork) => `
+              <div style="display:flex;justify-content:space-between;gap:16px;padding:10px 0;">
+                <div style="font-size:16px;line-height:1.6;color:#6f5647;">${escapeHtml(
+                  artwork.title
+                )}</div>
+                <div style="font-size:16px;line-height:1.6;color:#4b3226;">${escapeHtml(
+                  formatMoneyFromCents(artwork.price_cents, currency)
+                )}</div>
+              </div>
+            `
+          )
+          .join("");
+
         const ownerEmail = process.env.CONTACT_TO_EMAIL;
+        const logoUrl = "https://frequencyframed.ie/images/logo.png";
 
         if (customerEmail) {
           try {
             await resend.emails.send({
               from: "Frequency Framed <onboarding@resend.dev>",
               to: customerEmail,
-              subject: "Your Frequency Framed order is confirmed",
+              subject: `Your Frequency Framed order ${orderNumber} is confirmed`,
               text: `Hello ${customerFullName || "there"},
 
 Thank you for your purchase from Frequency Framed.
 
+Order number: ${orderNumber}
 Order ID: ${orderId}
 Payment reference: ${paymentIntentId}
 
@@ -363,6 +568,15 @@ ${shippingAddress || "No delivery address provided"}
 We will contact you if any further information is needed.
 
 Frequency Framed`,
+              html: buildBuyerEmailHtml({
+                logoUrl,
+                customerName: customerFullName || "there",
+                orderNumber,
+                paymentReference: paymentIntentId,
+                itemsHtml,
+                total: formattedTotal,
+                shippingAddress,
+              }),
             });
           } catch (emailError) {
             console.error("Failed sending buyer email:", emailError);
@@ -375,9 +589,10 @@ Frequency Framed`,
               from: "Frequency Framed <onboarding@resend.dev>",
               to: ownerEmail,
               replyTo: customerEmail || undefined,
-              subject: `New order received - ${formattedTotal}`,
+              subject: `New order received - ${orderNumber}`,
               text: `A new order has been placed on Frequency Framed.
 
+Order number: ${orderNumber}
 Order ID: ${orderId}
 Payment reference: ${paymentIntentId}
 
@@ -394,6 +609,17 @@ ${formattedTotal}
 
 Delivery address:
 ${shippingAddress || "No delivery address provided"}`,
+              html: buildOwnerEmailHtml({
+                logoUrl,
+                customerName: customerFullName || "N/A",
+                customerEmail: customerEmail || "N/A",
+                customerPhone: customerPhone || "N/A",
+                orderNumber,
+                paymentReference: paymentIntentId,
+                itemsHtml,
+                total: formattedTotal,
+                shippingAddress,
+              }),
             });
           } catch (emailError) {
             console.error("Failed sending owner email:", emailError);
@@ -403,6 +629,7 @@ ${shippingAddress || "No delivery address provided"}`,
         console.log("✅ Order saved successfully from webhook:", {
           paymentIntentId,
           orderId,
+          orderNumber,
           customerEmail,
           artworks: itemSlugs,
         });
