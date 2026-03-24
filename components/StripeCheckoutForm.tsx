@@ -8,7 +8,24 @@ import {
   useStripe,
 } from "@stripe/react-stripe-js";
 
-export default function StripeCheckoutForm() {
+type StripeCheckoutFormProps = {
+  billingDetails: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    addressLine1: string;
+    addressLine2: string;
+    city: string;
+    county: string;
+    postalCode: string;
+    country: string;
+  };
+};
+
+export default function StripeCheckoutForm({
+  billingDetails,
+}: StripeCheckoutFormProps) {
   const stripe = useStripe();
   const elements = useElements();
 
@@ -21,21 +38,101 @@ export default function StripeCheckoutForm() {
     setIsSubmitting(true);
     setErrorMessage("");
 
-    const { error } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: `${window.location.origin}/success`,
-      },
-      redirect: "if_required",
-    });
+    const submitResult = await elements.submit();
 
-    if (error) {
-      setErrorMessage(error.message || "Payment failed.");
+    if (submitResult.error) {
+      setErrorMessage(
+        submitResult.error.message || "Please complete the payment form."
+      );
       setIsSubmitting(false);
       return;
     }
 
-    window.location.href = "/success";
+    const result = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: `${window.location.origin}/success`,
+        payment_method_data: {
+          billing_details: {
+            name: `${billingDetails.firstName} ${billingDetails.lastName}`.trim(),
+            email: billingDetails.email,
+            phone: billingDetails.phone,
+            address: {
+              line1: billingDetails.addressLine1,
+              line2: billingDetails.addressLine2 || undefined,
+              city: billingDetails.city,
+              state: billingDetails.county,
+              postal_code: billingDetails.postalCode,
+              country:
+                billingDetails.country === "Ireland"
+                  ? "IE"
+                  : billingDetails.country === "United Kingdom"
+                  ? "GB"
+                  : billingDetails.country === "Portugal"
+                  ? "PT"
+                  : billingDetails.country === "Brazil"
+                  ? "BR"
+                  : billingDetails.country === "Spain"
+                  ? "ES"
+                  : billingDetails.country === "France"
+                  ? "FR"
+                  : billingDetails.country === "Germany"
+                  ? "DE"
+                  : billingDetails.country === "Italy"
+                  ? "IT"
+                  : "IE",
+            },
+          },
+        },
+      },
+      redirect: "if_required",
+    });
+
+    if (result.error) {
+      setErrorMessage(result.error.message || "Payment failed.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    const paymentIntent = result.paymentIntent;
+
+    if (!paymentIntent) {
+      setErrorMessage("Payment could not be confirmed. Please try again.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    switch (paymentIntent.status) {
+      case "succeeded":
+        window.location.href = "/success";
+        return;
+
+      case "processing":
+        setErrorMessage(
+          "Your payment is processing. Please wait a moment and check again."
+        );
+        setIsSubmitting(false);
+        return;
+
+      case "requires_payment_method":
+        setErrorMessage(
+          "Payment method was not completed. Please re-enter your card details and try again."
+        );
+        setIsSubmitting(false);
+        return;
+
+      case "requires_action":
+        setErrorMessage(
+          "Additional authentication is required. Please follow the next step."
+        );
+        setIsSubmitting(false);
+        return;
+
+      default:
+        setErrorMessage(`Unexpected payment status: ${paymentIntent.status}`);
+        setIsSubmitting(false);
+        return;
+    }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {

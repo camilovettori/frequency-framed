@@ -337,7 +337,7 @@ export default function CheckoutPage() {
                   },
                 }}
               >
-                <StripeCheckoutForm />
+                <StripeCheckoutForm billingDetails={form} />
               </Elements>
             )}
           </div>
