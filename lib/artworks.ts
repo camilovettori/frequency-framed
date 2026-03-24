@@ -1,3 +1,4 @@
+import { unstable_noStore as noStore } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { artworks as artworkMeta } from "@/data/artworks";
 
@@ -46,6 +47,8 @@ function mergeArtwork(row: ArtworkRow): Artwork {
 }
 
 export async function getArtworks(): Promise<Artwork[]> {
+  noStore();
+
   const { data, error } = await supabaseAdmin
     .from("artworks")
     .select("slug, title, image_url, price_cents, status")
@@ -60,6 +63,8 @@ export async function getArtworks(): Promise<Artwork[]> {
 }
 
 export async function getArtworkBySlug(slug: string): Promise<Artwork | null> {
+  noStore();
+
   const { data, error } = await supabaseAdmin
     .from("artworks")
     .select("slug, title, image_url, price_cents, status")

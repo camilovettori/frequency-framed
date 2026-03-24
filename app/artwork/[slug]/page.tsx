@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import Container from "@/components/ui/container";
 import AddToCartButton from "@/components/AddToCartButton";
 import { getArtworkBySlug } from "@/lib/artworks";
+export const dynamic = "force-dynamic";
 
 type ArtworkPageProps = {
   params: Promise<{

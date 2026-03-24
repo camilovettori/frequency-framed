@@ -1,6 +1,7 @@
 import Container from "@/components/ui/container";
 import ArtworkCard from "@/components/ui/artwork-card";
 import { getArtworks } from "@/lib/artworks";
+export const dynamic = "force-dynamic";
 
 const filters = ["All", "Numerology", "Nature", "Cosmic & Spiritual", "Symbols"];
 
