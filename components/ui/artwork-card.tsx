@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Artwork } from "@/data/artworks";
+import type { Artwork } from "@/lib/artworks";
 
 export default function ArtworkCard({ artwork }: { artwork: Artwork }) {
   const availabilityLabel =

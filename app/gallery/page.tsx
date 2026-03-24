@@ -1,10 +1,12 @@
 import Container from "@/components/ui/container";
 import ArtworkCard from "@/components/ui/artwork-card";
-import { artworks } from "@/data/artworks";
+import { getArtworks } from "@/lib/artworks";
 
 const filters = ["All", "Numerology", "Nature", "Cosmic & Spiritual", "Symbols"];
 
-export default function GalleryPage() {
+export default async function GalleryPage() {
+  const artworks = await getArtworks();
+
   return (
     <main className="pt-20 md:pt-24 pb-24 md:pb-32">
       <Container>

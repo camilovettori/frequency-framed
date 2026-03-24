@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Container from "@/components/ui/container";
 import AddToCartButton from "@/components/AddToCartButton";
-import { artworks } from "@/data/artworks";
+import { getArtworkBySlug } from "@/lib/artworks";
 
 type ArtworkPageProps = {
   params: Promise<{
@@ -14,7 +14,7 @@ type ArtworkPageProps = {
 export default async function ArtworkPage({ params }: ArtworkPageProps) {
   const { slug } = await params;
 
-  const artwork = artworks.find((item) => item.slug === slug);
+  const artwork = await getArtworkBySlug(slug);
 
   if (!artwork) {
     notFound();
@@ -42,7 +42,6 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
         </div>
 
         <section className="grid lg:grid-cols-[1.05fr_0.95fr] gap-14 md:gap-20 items-start">
-          {/* IMAGE */}
           <div className="relative overflow-hidden rounded-sm bg-white shadow-[0_18px_50px_rgba(0,0,0,0.08)]">
             {artwork.status !== "Available" && (
               <div className="absolute left-5 top-5 z-10 bg-white/95 px-3 py-2 text-[10px] uppercase tracking-[0.22em] text-[var(--foreground)] shadow-sm">
@@ -62,7 +61,6 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
             </div>
           </div>
 
-          {/* INFO */}
           <div className="max-w-xl">
             <p className="text-xs uppercase tracking-[0.28em] text-[var(--muted)]">
               {artwork.category ?? "Original Artwork"}
