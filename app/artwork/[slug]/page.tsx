@@ -1,8 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import Container from "@/components/ui/container";
-import { artworks } from "@/data/artworks";
 import { notFound } from "next/navigation";
+import Container from "@/components/ui/container";
+import AddToCartButton from "@/components/AddToCartButton";
+import { artworks } from "@/data/artworks";
 
 type ArtworkPageProps = {
   params: Promise<{
@@ -25,6 +26,8 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
       : artwork.status === "Reserved"
       ? "Reserved"
       : "Available";
+
+  const isPurchasable = artwork.status === "Available";
 
   return (
     <main className="pt-20 md:pt-24 pb-24 md:pb-32">
@@ -92,14 +95,12 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
               </p>
             </div>
 
-            <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-6 border-t border-[var(--border)] pt-8">
+            <div className="mt-10 grid grid-cols-1 gap-6 border-t border-[var(--border)] pt-8 sm:grid-cols-2">
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
                   Medium
                 </p>
-                <p className="mt-2 text-[var(--foreground)]">
-                  Oil on canvas
-                </p>
+                <p className="mt-2 text-[var(--foreground)]">Oil on canvas</p>
               </div>
 
               <div>
@@ -131,18 +132,32 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
             </div>
 
             <div className="mt-12 flex flex-wrap gap-4">
+              {isPurchasable ? (
+                <AddToCartButton artwork={artwork} />
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  className="inline-flex cursor-not-allowed items-center justify-center px-7 py-4 bg-[var(--border)] text-[var(--muted)] text-sm uppercase tracking-[0.16em]"
+                >
+                  {artwork.status === "Sold" ? "Sold" : "Reserved"}
+                </button>
+              )}
+
               <a
                 href="/contact"
-                className="inline-flex items-center justify-center px-7 py-4 bg-[var(--foreground)] text-white text-sm uppercase tracking-[0.16em] transition-all duration-300 hover:opacity-90"
+                className="inline-flex items-center justify-center px-7 py-4 border border-[var(--foreground)] text-sm uppercase tracking-[0.16em] text-[var(--foreground)] bg-transparent transition-all duration-300 hover:bg-[var(--foreground)] hover:text-white"
               >
                 Enquire About This Piece
               </a>
+            </div>
 
+            <div className="mt-6">
               <a
                 href="/commissions"
-                className="inline-flex items-center justify-center px-7 py-4 border border-[var(--foreground)] text-sm uppercase tracking-[0.16em] text-[var(--foreground)] bg-transparent transition-all duration-300 hover:bg-[var(--foreground)] hover:text-white"
+                className="text-xs uppercase tracking-[0.22em] text-[var(--muted)] transition hover:text-[var(--foreground)]"
               >
-                Commission a Piece
+                Looking for something personal? Commission a Piece
               </a>
             </div>
           </div>

@@ -49,6 +49,12 @@ export default function Header() {
             >
               Contact
             </Link>
+            <Link
+  href="/cart"
+  className="transition-colors duration-300 hover:text-[var(--foreground)]"
+>
+  Cart
+</Link>
           </nav>
         </div>
       </Container>

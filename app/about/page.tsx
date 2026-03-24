@@ -69,7 +69,7 @@ export default function AboutPage() {
           <div className="flex justify-center lg:justify-end">
             <div className="relative w-full max-w-[720px] overflow-hidden rounded-md bg-[var(--surface)] shadow-[0_20px_60px_rgba(0,0,0,0.12)]">
               <Image
-                src="/images/natanartist.jpg"
+                src="/images/natanFF.jpg"
                 alt="Natan Ribeiro"
                 width={1200}
                 height={1500}
