@@ -7,7 +7,12 @@ import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import Container from "@/components/ui/container";
 import StripeCheckoutForm from "@/components/StripeCheckoutForm";
-import { CartItem, getCart, getCartTotal } from "@/lib/cart";
+import {
+  CartItem,
+  getCart,
+  getCartTotal,
+  saveCart,
+} from "@/lib/cart";
 
 type CheckoutForm = {
   firstName: string;
@@ -43,13 +48,58 @@ const formatMoney = (value: number) => `€${value.toFixed(2)}`;
 
 export default function CheckoutPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [removedItems, setRemovedItems] = useState<CartItem[]>([]);
+  const [isValidatingCart, setIsValidatingCart] = useState(true);
+
   const [form, setForm] = useState<CheckoutForm>(initialForm);
   const [clientSecret, setClientSecret] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isPreparingPayment, setIsPreparingPayment] = useState(false);
 
   useEffect(() => {
-    setCart(getCart());
+    async function validateCart() {
+      const currentCart = getCart();
+
+      if (currentCart.length === 0) {
+        setCart([]);
+        setIsValidatingCart(false);
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/cart/validate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            items: currentCart,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to validate cart.");
+        }
+
+        const validItems = Array.isArray(data.validItems) ? data.validItems : [];
+        const removed = Array.isArray(data.removedItems)
+          ? data.removedItems
+          : [];
+
+        saveCart(validItems);
+        setCart(validItems);
+        setRemovedItems(removed);
+      } catch (error) {
+        console.error("Checkout cart validation failed:", error);
+        setCart(currentCart);
+      } finally {
+        setIsValidatingCart(false);
+      }
+    }
+
+    validateCart();
   }, []);
 
   const subtotal = useMemo(() => getCartTotal(cart), [cart]);
@@ -104,6 +154,28 @@ export default function CheckoutPage() {
     form.postalCode.trim() &&
     form.country.trim();
 
+  if (isValidatingCart) {
+    return (
+      <main className="pt-20 md:pt-24 pb-24 md:pb-32">
+        <Container>
+          <section className="max-w-4xl">
+            <p className="text-xs uppercase tracking-[0.28em] text-[var(--muted)]">
+              Checkout
+            </p>
+
+            <h1 className="mt-6 text-5xl md:text-7xl leading-[0.95] tracking-[-0.03em] text-[var(--foreground)]">
+              Validating your cart
+            </h1>
+
+            <p className="mt-8 max-w-2xl text-[20px] md:text-[22px] leading-[1.5] text-[var(--muted)]">
+              Checking artwork availability before payment.
+            </p>
+          </section>
+        </Container>
+      </main>
+    );
+  }
+
   if (cart.length === 0) {
     return (
       <main className="pt-20 md:pt-24 pb-24 md:pb-32">
@@ -152,6 +224,24 @@ export default function CheckoutPage() {
             on-site.
           </p>
         </section>
+
+        {removedItems.length > 0 && (
+          <section className="mt-10 border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
+            <p className="font-medium">
+              {removedItems.length === 1
+                ? "1 artwork was removed from checkout because it is no longer available."
+                : `${removedItems.length} artworks were removed from checkout because they are no longer available.`}
+            </p>
+
+            <div className="mt-2">
+              {removedItems.map((item) => (
+                <span key={item.id} className="mr-2 inline-block">
+                  {item.title}
+                </span>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className="mt-16 grid lg:grid-cols-[1fr_380px] gap-10 md:gap-14 items-start">
           <div className="border border-[var(--border)] bg-[var(--surface)] p-8 md:p-10 shadow-[0_12px_35px_rgba(0,0,0,0.04)] space-y-10">
@@ -315,7 +405,7 @@ export default function CheckoutPage() {
                 <button
                   type="button"
                   onClick={handlePreparePayment}
-                  disabled={!isFormComplete || isPreparingPayment}
+                  disabled={!isFormComplete || isPreparingPayment || cart.length === 0}
                   className="inline-flex items-center justify-center px-7 py-4 bg-[var(--foreground)] text-white text-sm uppercase tracking-[0.16em] transition-all duration-300 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isPreparingPayment ? "Preparing..." : "Continue to Payment"}

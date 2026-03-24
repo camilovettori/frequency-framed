@@ -4,13 +4,63 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import Container from "@/components/ui/container";
-import { CartItem, getCart, getCartTotal, removeFromCart } from "@/lib/cart";
+import {
+  CartItem,
+  getCart,
+  getCartTotal,
+  removeFromCart,
+  saveCart,
+} from "@/lib/cart";
 
 export default function CartPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [removedItems, setRemovedItems] = useState<CartItem[]>([]);
+  const [isValidating, setIsValidating] = useState(true);
 
   useEffect(() => {
-    setCart(getCart());
+    async function validateCart() {
+      const currentCart = getCart();
+
+      if (currentCart.length === 0) {
+        setCart([]);
+        setIsValidating(false);
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/cart/validate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            items: currentCart,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to validate cart.");
+        }
+
+        const validItems = Array.isArray(data.validItems) ? data.validItems : [];
+        const removed = Array.isArray(data.removedItems)
+          ? data.removedItems
+          : [];
+
+        saveCart(validItems);
+        setCart(validItems);
+        setRemovedItems(removed);
+      } catch (error) {
+        console.error("Cart validation failed:", error);
+        setCart(currentCart);
+      } finally {
+        setIsValidating(false);
+      }
+    }
+
+    validateCart();
   }, []);
 
   function handleRemove(id: string) {
@@ -37,7 +87,35 @@ export default function CartPage() {
           </p>
         </section>
 
-        {cart.length === 0 ? (
+        {removedItems.length > 0 && (
+          <section className="mt-10 border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
+            <p className="font-medium">
+              {removedItems.length === 1
+                ? "1 artwork was removed from your cart because it is no longer available."
+                : `${removedItems.length} artworks were removed from your cart because they are no longer available.`}
+            </p>
+
+            <div className="mt-2">
+              {removedItems.map((item) => (
+                <span key={item.id} className="mr-2 inline-block">
+                  {item.title}
+                </span>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {isValidating ? (
+          <section className="mt-16 border border-[var(--border)] bg-[var(--surface)] p-8 md:p-10">
+            <h2 className="text-2xl md:text-3xl text-[var(--foreground)]">
+              Validating your cart
+            </h2>
+
+            <p className="mt-4 max-w-2xl text-[18px] md:text-[20px] leading-[1.6] text-[var(--muted)]">
+              Checking artwork availability...
+            </p>
+          </section>
+        ) : cart.length === 0 ? (
           <section className="mt-16 border border-[var(--border)] bg-[var(--surface)] p-8 md:p-10">
             <h2 className="text-2xl md:text-3xl text-[var(--foreground)]">
               Your cart is empty

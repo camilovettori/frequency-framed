@@ -11,11 +11,6 @@ type CustomerRow = {
   phone: string | null;
 };
 
-type OrderRow = {
-  id: string;
-  stripe_payment_intent_id: string | null;
-};
-
 type ArtworkRow = {
   id: string;
   slug: string;
@@ -70,6 +65,18 @@ export async function POST(request: Request) {
           paymentIntent.metadata.customer_full_name?.trim() || "";
         const customerPhone = paymentIntent.metadata.customer_phone?.trim() || "";
 
+        const shippingAddressLine1 =
+          paymentIntent.metadata.shipping_address_1?.trim() || "";
+        const shippingAddressLine2 =
+          paymentIntent.metadata.shipping_address_2?.trim() || "";
+        const shippingCity = paymentIntent.metadata.shipping_city?.trim() || "";
+        const shippingCounty =
+          paymentIntent.metadata.shipping_county?.trim() || "";
+        const shippingPostalCode =
+          paymentIntent.metadata.shipping_postal_code?.trim() || "";
+        const shippingCountry =
+          paymentIntent.metadata.shipping_country?.trim() || "";
+
         const itemIdsRaw = paymentIntent.metadata.item_ids || "";
         const itemSlugs = unique(
           itemIdsRaw
@@ -91,7 +98,6 @@ export async function POST(request: Request) {
           break;
         }
 
-        // 1) Idempotência: se já existe order com esse payment_intent, sai sem duplicar
         const { data: existingOrder, error: existingOrderError } =
           await supabaseAdmin
             .from("orders")
@@ -108,11 +114,13 @@ export async function POST(request: Request) {
         }
 
         if (existingOrder) {
-          console.log("Webhook already processed for payment intent:", paymentIntentId);
+          console.log(
+            "Webhook already processed for payment intent:",
+            paymentIntentId
+          );
           return NextResponse.json({ received: true, duplicate: true });
         }
 
-        // 2) Buscar artworks reais
         const { data: artworksData, error: artworksError } = await supabaseAdmin
           .from("artworks")
           .select("id, slug, title, price_cents, status")
@@ -141,7 +149,6 @@ export async function POST(request: Request) {
           );
         }
 
-        // 3) Revalidar disponibilidade
         const unavailable = artworks.filter(
           (artwork) => artwork.status !== "available"
         );
@@ -161,7 +168,6 @@ export async function POST(request: Request) {
           );
         }
 
-        // 4) Buscar ou criar customer
         let customerId: string | null = null;
 
         if (customerEmail) {
@@ -173,7 +179,10 @@ export async function POST(request: Request) {
               .maybeSingle();
 
           if (existingCustomerError) {
-            console.error("Failed checking existing customer:", existingCustomerError);
+            console.error(
+              "Failed checking existing customer:",
+              existingCustomerError
+            );
             return NextResponse.json(
               { error: "Failed checking existing customer." },
               { status: 500 }
@@ -231,7 +240,6 @@ export async function POST(request: Request) {
           }
         }
 
-        // 5) Criar order
         const { data: createdOrder, error: createOrderError } = await supabaseAdmin
           .from("orders")
           .insert({
@@ -239,6 +247,15 @@ export async function POST(request: Request) {
             customer_id: customerId,
             amount_total_cents: amountTotalCents,
             currency,
+            shipping_full_name: customerFullName || null,
+            shipping_email: customerEmail || null,
+            shipping_phone: customerPhone || null,
+            shipping_address_line1: shippingAddressLine1 || null,
+            shipping_address_line2: shippingAddressLine2 || null,
+            shipping_city: shippingCity || null,
+            shipping_county: shippingCounty || null,
+            shipping_postal_code: shippingPostalCode || null,
+            shipping_country: shippingCountry || null,
           })
           .select("id")
           .single();
@@ -253,7 +270,6 @@ export async function POST(request: Request) {
 
         const orderId = createdOrder.id;
 
-        // 6) Criar order_items
         const orderItemsPayload = artworks.map((artwork) => ({
           order_id: orderId,
           artwork_slug: artwork.slug,
@@ -273,7 +289,6 @@ export async function POST(request: Request) {
           );
         }
 
-        // 7) Marcar artworks como sold
         const { error: updateArtworksError } = await supabaseAdmin
           .from("artworks")
           .update({ status: "sold" })
