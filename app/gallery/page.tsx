@@ -1,12 +1,11 @@
 import Container from "@/components/ui/container";
 import ArtworkCard from "@/components/ui/artwork-card";
-import { getArtworks } from "@/lib/artworks";
-export const dynamic = "force-dynamic";
+import { getPublishedArtworks } from "@/lib/public-artworks";
 
 const filters = ["All", "Numerology", "Nature", "Cosmic & Spiritual", "Symbols"];
 
 export default async function GalleryPage() {
-  const artworks = await getArtworks();
+  const artworks = await getPublishedArtworks();
 
   return (
     <main className="pt-20 md:pt-24 pb-24 md:pb-32">
@@ -31,6 +30,7 @@ export default async function GalleryPage() {
           {filters.map((item, index) => (
             <button
               key={item}
+              type="button"
               className={`px-5 py-3 text-xs uppercase tracking-[0.18em] border transition-all duration-300 ${
                 index === 0
                   ? "bg-[var(--foreground)] text-white border-[var(--foreground)]"
@@ -44,7 +44,7 @@ export default async function GalleryPage() {
 
         <section className="mt-14 grid md:grid-cols-2 lg:grid-cols-3 gap-12 md:gap-14">
           {artworks.map((artwork) => (
-            <ArtworkCard key={artwork.slug} artwork={artwork} />
+            <ArtworkCard key={artwork.id} artwork={artwork} />
           ))}
         </section>
       </Container>

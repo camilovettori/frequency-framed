@@ -1,9 +1,11 @@
 import Container from "../ui/container";
 import ArtworkCard from "../ui/artwork-card";
-import { artworks } from "@/data/artworks";
+import { getFeaturedPublishedArtworks } from "@/lib/public-artworks";
 
-export default function FeaturedArtworks() {
-  const featured = artworks.slice(0, 3);
+export default async function FeaturedArtworks() {
+  const featured = await getFeaturedPublishedArtworks();
+
+  if (!featured.length) return null;
 
   return (
     <section className="pb-24 md:pb-32">
@@ -20,7 +22,7 @@ export default function FeaturedArtworks() {
 
         <div className="grid md:grid-cols-3 gap-12 md:gap-14">
           {featured.map((artwork) => (
-            <ArtworkCard key={artwork.slug} artwork={artwork} />
+            <ArtworkCard key={artwork.id} artwork={artwork} />
           ))}
         </div>
       </Container>

@@ -1,10 +1,8 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Container from "@/components/ui/container";
 import AddToCartButton from "@/components/AddToCartButton";
-import { getArtworkBySlug } from "@/lib/artworks";
-export const dynamic = "force-dynamic";
+import { getPublishedArtworkBySlug } from "@/lib/public-artworks";
 
 type ArtworkPageProps = {
   params: Promise<{
@@ -12,23 +10,46 @@ type ArtworkPageProps = {
   }>;
 };
 
+function formatMoney(cents: number) {
+  return new Intl.NumberFormat("en-IE", {
+    style: "currency",
+    currency: "EUR",
+  }).format(cents / 100);
+}
+
+function getAvailabilityLabel(status: string) {
+  switch (status) {
+    case "sold":
+      return "Unavailable";
+    case "reserved":
+      return "Reserved";
+    default:
+      return "Available";
+  }
+}
+
+function getStatusBadge(status: string) {
+  switch (status) {
+    case "sold":
+      return "Sold";
+    case "reserved":
+      return "Reserved";
+    default:
+      return null;
+  }
+}
+
 export default async function ArtworkPage({ params }: ArtworkPageProps) {
   const { slug } = await params;
-
-  const artwork = await getArtworkBySlug(slug);
+  const artwork = await getPublishedArtworkBySlug(slug);
 
   if (!artwork) {
     notFound();
   }
 
-  const availabilityLabel =
-    artwork.status === "Sold"
-      ? "Unavailable"
-      : artwork.status === "Reserved"
-      ? "Reserved"
-      : "Available";
-
-  const isPurchasable = artwork.status === "Available";
+  const availabilityLabel = getAvailabilityLabel(artwork.status);
+  const statusBadge = getStatusBadge(artwork.status);
+  const isPurchasable = artwork.status === "available";
 
   return (
     <main className="pt-20 md:pt-24 pb-24 md:pb-32">
@@ -44,21 +65,22 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
 
         <section className="grid lg:grid-cols-[1.05fr_0.95fr] gap-14 md:gap-20 items-start">
           <div className="relative overflow-hidden rounded-sm bg-white shadow-[0_18px_50px_rgba(0,0,0,0.08)]">
-            {artwork.status !== "Available" && (
+            {statusBadge && (
               <div className="absolute left-5 top-5 z-10 bg-white/95 px-3 py-2 text-[10px] uppercase tracking-[0.22em] text-[var(--foreground)] shadow-sm">
-                {artwork.status}
+                {statusBadge}
               </div>
             )}
 
             <div className="relative aspect-[4/5] bg-white">
-              <Image
-                src={artwork.image}
-                alt={artwork.title}
-                fill
-                sizes="(max-width: 1024px) 100vw, 55vw"
-                className="object-contain p-8"
-                priority
-              />
+              {artwork.image_url ? (
+                <img
+                  src={artwork.image_url}
+                  alt={artwork.title}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="h-full w-full bg-[#f5f1eb]" />
+              )}
             </div>
           </div>
 
@@ -73,7 +95,7 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
 
             <div className="mt-8 flex items-center gap-4">
               <span className="text-2xl md:text-3xl font-medium text-[var(--foreground)]">
-                {artwork.price}
+                {formatMoney(artwork.price_cents)}
               </span>
 
               <span className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
@@ -99,7 +121,9 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
                 <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
                   Medium
                 </p>
-                <p className="mt-2 text-[var(--foreground)]">Oil on canvas</p>
+                <p className="mt-2 text-[var(--foreground)]">
+                  {artwork.medium || "Oil on canvas"}
+                </p>
               </div>
 
               <div>
@@ -132,14 +156,21 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
 
             <div className="mt-12 flex flex-wrap gap-4">
               {isPurchasable ? (
-                <AddToCartButton artwork={artwork} />
+                <AddToCartButton
+                  artwork={{
+                    id: artwork.id,
+                    title: artwork.title,
+                    price: artwork.price_cents / 100,
+                    image: artwork.image_url || "",
+                  }}
+                />
               ) : (
                 <button
                   type="button"
                   disabled
                   className="inline-flex cursor-not-allowed items-center justify-center px-7 py-4 bg-[var(--border)] text-[var(--muted)] text-sm uppercase tracking-[0.16em]"
                 >
-                  {artwork.status === "Sold" ? "Sold" : "Reserved"}
+                  {artwork.status === "sold" ? "Sold" : "Reserved"}
                 </button>
               )}
 
