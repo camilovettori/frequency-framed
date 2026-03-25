@@ -1,14 +1,3 @@
-type Props = {
-  params: {
-    id: string;
-  };
-};
-
-export default function GalleryDetailPage({ params }: Props) {
-  return (
-    <div>
-      <h1>Gallery Detail</h1>
-      <p>ID: {params.id}</p>
-    </div>
-  );
+export default function GalleryPage() {
+  return <div>Gallery list page</div>;
 }
