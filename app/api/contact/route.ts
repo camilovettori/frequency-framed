@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     }
 
     await resend.emails.send({
-      from: "Frequency Framed <onboarding@resend.dev>",
+      from: "Frequency Framed <Hello@frequencyframed.ie>",
       to,
       replyTo: email,
       subject: `New enquiry: ${subject}`,
