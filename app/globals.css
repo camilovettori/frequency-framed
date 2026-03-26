@@ -36,3 +36,60 @@ h6 {
   background-image: radial-gradient(rgba(74, 52, 39, 0.03) 0.8px, transparent 0.8px);
   background-size: 12px 12px;
 }
+
+.journal-content {
+  color: var(--foreground);
+}
+
+.journal-content p {
+  margin: 0 0 1.25rem 0;
+  font-size: 18px;
+  line-height: 1.95;
+}
+
+.journal-content h2 {
+  margin: 2.25rem 0 1rem;
+  font-size: 2rem;
+  line-height: 1.05;
+}
+
+.journal-content h3 {
+  margin: 1.75rem 0 0.85rem;
+  font-size: 1.5rem;
+}
+
+.journal-content ul,
+.journal-content ol {
+  margin: 0 0 1.25rem 0;
+  padding-left: 1.5rem;
+}
+
+.journal-content li {
+  margin: 0.35rem 0;
+  line-height: 1.9;
+}
+
+.journal-content blockquote {
+  margin: 1.5rem 0;
+  border-left: 1px solid var(--border);
+  padding-left: 1.25rem;
+  font-style: italic;
+  color: var(--muted);
+}
+
+.journal-content a {
+  text-decoration: underline;
+}
+
+.journal-content hr {
+  margin: 2rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.journal-content strong {
+  font-weight: 600;
+}
+
+.journal-content em {
+  font-style: italic;
+}

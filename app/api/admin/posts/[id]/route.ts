@@ -7,16 +7,7 @@ type RouteContext = {
   }>;
 };
 
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
-export async function GET(_: NextRequest, context: RouteContext) {
+export async function GET(_request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
 
@@ -32,10 +23,9 @@ export async function GET(_: NextRequest, context: RouteContext) {
 
     return NextResponse.json({ post: data });
   } catch (error) {
-    console.error("Admin post GET error:", error);
-
+    console.error("Admin post GET by id error:", error);
     return NextResponse.json(
-      { error: "Something went wrong while loading post." },
+      { error: "Something went wrong while loading the post." },
       { status: 500 }
     );
   }
@@ -46,19 +36,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     const { id } = await context.params;
     const body = await request.json();
 
-    const title = String(body.title || "").trim();
-    const slug = String(body.slug || "").trim() || slugify(title);
-
-    if (!title) {
-      return NextResponse.json(
-        { error: "Title is required." },
-        { status: 400 }
-      );
-    }
-
     const payload = {
-      title,
-      slug,
+      title: String(body.title || "").trim(),
+      slug: String(body.slug || "").trim(),
       excerpt: body.excerpt || null,
       content: body.content || null,
       cover_image_url: body.cover_image_url || null,
@@ -69,6 +49,20 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
           ? null
           : Number(body.home_hero_order),
     };
+
+    if (!payload.title) {
+      return NextResponse.json(
+        { error: "Title is required." },
+        { status: 400 }
+      );
+    }
+
+    if (!payload.slug) {
+      return NextResponse.json(
+        { error: "Slug is required." },
+        { status: 400 }
+      );
+    }
 
     const { data, error } = await supabaseAdmin
       .from("posts")
@@ -87,36 +81,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ post: data });
   } catch (error) {
     console.error("Admin post PATCH error:", error);
-
     return NextResponse.json(
-      { error: "Something went wrong while updating post." },
-      { status: 500 }
-    );
-  }
-}
-
-export async function DELETE(_: NextRequest, context: RouteContext) {
-  try {
-    const { id } = await context.params;
-
-    const { error } = await supabaseAdmin
-      .from("posts")
-      .delete()
-      .eq("id", id);
-
-    if (error) {
-      return NextResponse.json(
-        { error: "Failed to delete post." },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Admin post DELETE error:", error);
-
-    return NextResponse.json(
-      { error: "Something went wrong while deleting post." },
+      { error: "Something went wrong while updating the post." },
       { status: 500 }
     );
   }

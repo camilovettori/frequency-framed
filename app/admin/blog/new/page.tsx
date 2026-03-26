@@ -3,6 +3,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClientBrowser } from "@/lib/supabase-browser";
+import TiptapEditor from "@/components/admin/TiptapEditor";
 
 function slugify(value: string) {
   return value
@@ -101,7 +102,7 @@ export default function NewBlogPage() {
 
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="grid gap-6 lg:grid-cols-2">
-          <div className="border border-[#e7d9ca] bg-white p-6 space-y-5">
+          <div className="space-y-5 border border-[#e7d9ca] bg-white p-6">
             <div>
               <label className="block text-xs uppercase tracking-[0.18em] text-[#8b6f5d]">
                 Title
@@ -145,16 +146,11 @@ export default function NewBlogPage() {
               <label className="block text-xs uppercase tracking-[0.18em] text-[#8b6f5d]">
                 Content
               </label>
-              <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                rows={12}
-                className="mt-3 w-full border border-[#d8c6b5] px-4 py-3 outline-none"
-              />
+              <TiptapEditor value={content} onChange={setContent} />
             </div>
           </div>
 
-          <div className="border border-[#e7d9ca] bg-white p-6 space-y-5">
+          <div className="space-y-5 border border-[#e7d9ca] bg-white p-6">
             <div>
               <label className="block text-xs uppercase tracking-[0.18em] text-[#8b6f5d]">
                 Cover Image URL
