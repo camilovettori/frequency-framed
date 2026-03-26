@@ -13,8 +13,9 @@ type ValidateCartPayload = {
 };
 
 type ArtworkRow = {
-  slug: string;
+  id: string;
   status: "available" | "sold" | "reserved";
+  is_published: boolean | null;
 };
 
 function unique(values: string[]) {
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
       });
     }
 
-    const slugs = unique(
+    const ids = unique(
       items
         .map((item) => item.id?.trim())
         .filter((value): value is string => Boolean(value))
@@ -41,8 +42,8 @@ export async function POST(request: Request) {
 
     const { data, error } = await supabaseAdmin
       .from("artworks")
-      .select("slug, status")
-      .in("slug", slugs);
+      .select("id, status, is_published")
+      .in("id", ids);
 
     if (error) {
       console.error("Cart validation error:", error);
@@ -54,15 +55,19 @@ export async function POST(request: Request) {
     }
 
     const rows = (data ?? []) as ArtworkRow[];
-    const statusMap = new Map(rows.map((row) => [row.slug, row.status]));
+    const artworkMap = new Map(rows.map((row) => [row.id, row]));
 
     const validItems: CartItem[] = [];
     const removedItems: CartItem[] = [];
 
     for (const item of items) {
-      const status = statusMap.get(item.id);
+      const artwork = artworkMap.get(item.id);
 
-      if (status === "available") {
+      if (
+        artwork &&
+        artwork.is_published === true &&
+        artwork.status === "available"
+      ) {
         validItems.push(item);
       } else {
         removedItems.push(item);

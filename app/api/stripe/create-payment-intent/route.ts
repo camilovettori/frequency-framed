@@ -3,7 +3,7 @@ import { stripe } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 type CheckoutItem = {
-  id: string; // hoje seu id é o slug
+  id: string;
   title: string;
   price: number;
   image: string;
@@ -32,6 +32,7 @@ type ArtworkRow = {
   price_cents: number;
   image_url: string | null;
   status: "available" | "sold" | "reserved";
+  is_published: boolean | null;
 };
 
 function unique(values: string[]) {
@@ -46,13 +47,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Cart is empty." }, { status: 400 });
     }
 
-    const slugs = unique(
+    const ids = unique(
       body.items
         .map((item) => item.id?.trim())
         .filter((value): value is string => Boolean(value))
     );
 
-    if (slugs.length === 0) {
+    if (ids.length === 0) {
       return NextResponse.json(
         { error: "No valid artwork IDs were provided." },
         { status: 400 }
@@ -61,8 +62,8 @@ export async function POST(request: Request) {
 
     const { data: artworks, error } = await supabaseAdmin
       .from("artworks")
-      .select("id, slug, title, price_cents, image_url, status")
-      .in("slug", slugs);
+      .select("id, slug, title, price_cents, image_url, status, is_published")
+      .in("id", ids);
 
     if (error) {
       console.error("Supabase artworks fetch error:", error);
@@ -74,19 +75,21 @@ export async function POST(request: Request) {
 
     const rows = (artworks ?? []) as ArtworkRow[];
 
-    if (rows.length !== slugs.length) {
-      const foundSlugs = new Set(rows.map((row) => row.slug));
-      const missingSlugs = slugs.filter((slug) => !foundSlugs.has(slug));
+    if (rows.length !== ids.length) {
+      const foundIds = new Set(rows.map((row) => row.id));
+      const missingIds = ids.filter((id) => !foundIds.has(id));
 
       return NextResponse.json(
         {
-          error: `Some artworks were not found: ${missingSlugs.join(", ")}`,
+          error: `Some artworks were not found: ${missingIds.join(", ")}`,
         },
         { status: 400 }
       );
     }
 
-    const unavailable = rows.filter((row) => row.status !== "available");
+    const unavailable = rows.filter(
+      (row) => row.status !== "available" || row.is_published !== true
+    );
 
     if (unavailable.length > 0) {
       return NextResponse.json(
@@ -125,7 +128,8 @@ export async function POST(request: Request) {
         shipping_county: body.customer.county || "",
         shipping_postal_code: body.customer.postalCode || "",
         shipping_country: body.customer.country || "",
-        item_ids: rows.map((row) => row.slug).join(","),
+        item_ids: rows.map((row) => row.id).join(","),
+        item_slugs: rows.map((row) => row.slug).join(","),
         item_titles: rows.map((row) => row.title).join(" | "),
       },
     });
