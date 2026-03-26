@@ -26,7 +26,7 @@ export default function ContactPage() {
       email: String(formData.get("email") || ""),
       subject: String(formData.get("subject") || ""),
       message: String(formData.get("message") || ""),
-      website: String(formData.get("website") || ""), // honeypot
+      website: String(formData.get("website") || ""),
     };
 
     try {
@@ -59,41 +59,30 @@ export default function ContactPage() {
   }
 
   return (
-    <main className="pt-20 md:pt-24 pb-24 md:pb-32">
+    <main className="pb-24 pt-20 md:pb-32 md:pt-24">
       <Container>
-        {/* HEADER */}
         <section className="max-w-4xl">
           <p className="text-xs uppercase tracking-[0.28em] text-[var(--muted)]">
             Enquiry
           </p>
 
-          <h1 className="mt-6 text-5xl md:text-7xl leading-[0.95] tracking-[-0.03em] text-[var(--foreground)]">
+          <h1 className="mt-6 text-5xl leading-[0.95] tracking-[-0.03em] text-[var(--foreground)] md:text-7xl">
             Contact
           </h1>
 
-          <p className="mt-8 max-w-3xl text-[20px] md:text-[22px] leading-[1.5] text-[var(--muted)]">
+          <p className="mt-8 max-w-3xl text-[20px] leading-[1.5] text-[var(--muted)] md:text-[22px]">
             For artwork enquiries, commissions, pricing, or availability, send a
             message below. We will respond as soon as possible with the next
             steps.
           </p>
         </section>
 
-        {/* CONTENT */}
-        <section className="mt-16 grid lg:grid-cols-[1fr_0.85fr] gap-14 md:gap-20 items-start">
+        <section className="mt-16 grid items-start gap-14 md:gap-20 lg:grid-cols-[1fr_0.85fr]">
           {/* FORM */}
-          <div className="border border-[var(--border)] bg-[var(--surface)] p-8 md:p-10 shadow-[0_12px_35px_rgba(0,0,0,0.04)]">
+          <div className="border border-[var(--border)] bg-[var(--surface)] p-8 shadow-[0_12px_35px_rgba(0,0,0,0.04)] md:p-10">
             <form className="space-y-6" onSubmit={handleSubmit}>
-              
-              {/* HONEYPOT (ANTI-SPAM) */}
               <div className="hidden" aria-hidden="true">
-                <label htmlFor="website">Website</label>
-                <input
-                  id="website"
-                  name="website"
-                  type="text"
-                  tabIndex={-1}
-                  autoComplete="off"
-                />
+                <input name="website" type="text" tabIndex={-1} />
               </div>
 
               <div>
@@ -102,10 +91,9 @@ export default function ContactPage() {
                 </label>
                 <input
                   name="name"
-                  type="text"
                   required
                   placeholder="Your name"
-                  className="mt-3 w-full border border-[var(--border)] bg-white px-5 py-4 text-[var(--foreground)] outline-none transition-all duration-300 placeholder:text-[var(--muted)]/70 focus:border-[var(--foreground)] focus:shadow-[0_0_0_1px_var(--foreground)]"
+                  className="mt-3 w-full border border-[var(--border)] bg-white px-5 py-4 outline-none focus:border-[var(--foreground)]"
                 />
               </div>
 
@@ -118,7 +106,7 @@ export default function ContactPage() {
                   type="email"
                   required
                   placeholder="your@email.com"
-                  className="mt-3 w-full border border-[var(--border)] bg-white px-5 py-4 text-[var(--foreground)] outline-none transition-all duration-300 placeholder:text-[var(--muted)]/70 focus:border-[var(--foreground)] focus:shadow-[0_0_0_1px_var(--foreground)]"
+                  className="mt-3 w-full border border-[var(--border)] bg-white px-5 py-4 outline-none focus:border-[var(--foreground)]"
                 />
               </div>
 
@@ -128,10 +116,9 @@ export default function ContactPage() {
                 </label>
                 <input
                   name="subject"
-                  type="text"
                   required
                   placeholder="Artwork enquiry / Commission / Availability"
-                  className="mt-3 w-full border border-[var(--border)] bg-white px-5 py-4 text-[var(--foreground)] outline-none transition-all duration-300 placeholder:text-[var(--muted)]/70 focus:border-[var(--foreground)] focus:shadow-[0_0_0_1px_var(--foreground)]"
+                  className="mt-3 w-full border border-[var(--border)] bg-white px-5 py-4 outline-none focus:border-[var(--foreground)]"
                 />
               </div>
 
@@ -141,42 +128,30 @@ export default function ContactPage() {
                 </label>
                 <textarea
                   name="message"
-                  rows={7}
+                  rows={6}
                   required
-                  placeholder="Tell us about the artwork or commission you have in mind..."
-                  className="mt-3 w-full resize-none border border-[var(--border)] bg-white px-5 py-4 text-[var(--foreground)] outline-none transition-all duration-300 placeholder:text-[var(--muted)]/70 focus:border-[var(--foreground)] focus:shadow-[0_0_0_1px_var(--foreground)]"
+                  placeholder="Tell us about your request..."
+                  className="mt-3 w-full border border-[var(--border)] bg-white px-5 py-4 outline-none focus:border-[var(--foreground)]"
                 />
               </div>
 
-              <div className="flex flex-col items-start gap-4 pt-2">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="inline-flex min-w-[190px] items-center justify-center px-7 py-4 bg-[var(--foreground)] text-white text-sm uppercase tracking-[0.16em] transition-all duration-300 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isSubmitting ? (
-                    <span className="flex items-center gap-3">
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                      Sending...
-                    </span>
-                  ) : (
-                    "Send Enquiry"
-                  )}
-                </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="bg-[var(--foreground)] px-7 py-4 text-sm uppercase tracking-[0.16em] text-white hover:opacity-90"
+              >
+                {isSubmitting ? "Sending..." : "Send Enquiry"}
+              </button>
 
-                {status === "success" && (
-                  <div className="w-full border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-                    Your enquiry has been sent successfully. We will get back to
-                    you soon.
-                  </div>
-                )}
+              {status === "success" && (
+                <p className="text-green-600 text-sm">
+                  Message sent successfully.
+                </p>
+              )}
 
-                {status === "error" && (
-                  <div className="w-full border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-                    {errorMessage || "Something went wrong. Please try again."}
-                  </div>
-                )}
-              </div>
+              {status === "error" && (
+                <p className="text-red-600 text-sm">{errorMessage}</p>
+              )}
             </form>
           </div>
 
@@ -187,7 +162,7 @@ export default function ContactPage() {
                 Contact Details
               </p>
 
-              <div className="mt-5 space-y-4 text-[18px] leading-[1.6] text-[var(--muted)]">
+              <div className="mt-5 space-y-6 text-[18px] text-[var(--muted)]">
                 <p>
                   Email:
                   <br />
@@ -196,13 +171,41 @@ export default function ContactPage() {
                   </span>
                 </p>
 
-                <p>
-                  Instagram:
-                  <br />
-                  <span className="text-[var(--foreground)]">
+                <div className="space-y-3">
+                  <a
+                    href="https://www.instagram.com/frequency.framed.369?igsh=MWllZnY3enNudndzMw=="
+                    target="_blank"
+                    className="flex items-center gap-3 text-[var(--foreground)] hover:opacity-70"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <rect
+                        x="2"
+                        y="2"
+                        width="20"
+                        height="20"
+                        rx="5"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                      />
+                      <circle cx="12" cy="12" r="4" stroke="currentColor" />
+                    </svg>
                     @frequency.framed.369
-                  </span>
-                </p>
+                  </a>
+
+                  <a
+                    href="https://www.facebook.com/share/1C9gBWo55L/"
+                    target="_blank"
+                    className="flex items-center gap-3 text-[var(--foreground)] hover:opacity-70"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24">
+                      <path
+                        fill="currentColor"
+                        d="M22 12a10 10 0 1 0-11.5 9.9v-7h-2v-3h2V9.5c0-2 1.2-3.1 3-3.1.9 0 1.8.2 1.8.2v2h-1c-1 0-1.3.6-1.3 1.2V12h2.3l-.3 3H13v7A10 10 0 0 0 22 12z"
+                      />
+                    </svg>
+                    Facebook
+                  </a>
+                </div>
               </div>
             </div>
 
@@ -211,12 +214,12 @@ export default function ContactPage() {
                 Typical Enquiries
               </p>
 
-              <div className="mt-5 space-y-3 text-[18px] leading-[1.6] text-[var(--muted)]">
-                <p>• Availability of an artwork</p>
-                <p>• Commission requests</p>
-                <p>• Framing options</p>
-                <p>• Shipping and delivery</p>
-                <p>• Pricing and custom sizing</p>
+              <div className="mt-5 space-y-2 text-[var(--muted)]">
+                <p>• Availability</p>
+                <p>• Commission</p>
+                <p>• Framing</p>
+                <p>• Shipping</p>
+                <p>• Pricing</p>
               </div>
             </div>
 
@@ -225,8 +228,8 @@ export default function ContactPage() {
                 Response Time
               </p>
 
-              <p className="mt-5 text-[18px] leading-[1.6] text-[var(--muted)]">
-                We aim to respond within 1–2 business days.
+              <p className="mt-5 text-[var(--muted)]">
+                1–2 business days.
               </p>
             </div>
           </div>
