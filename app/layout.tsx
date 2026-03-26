@@ -4,7 +4,6 @@ import "./globals.css";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 
-
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
@@ -16,11 +15,11 @@ const inter = Inter({
   variable: "--font-body",
 });
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Frequency Framed",
   description: "Original oil paintings",
   verification: {
-    google: <meta name="google-site-verification" content="0mNJUSy9bzZYA75UMlJbtlZVMPHWqhay7fOwJVfn28I" />
+    google: "0mNJUSy9bzZYA75UMlJbtlZVMPHWqhay7fOwJVfn28I",
   },
 };
 
