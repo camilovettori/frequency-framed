@@ -1,5 +1,9 @@
 import Container from "@/components/ui/container";
-
+export const metadata = {
+  title: "Shipping & Returns | Artwork Delivery Information",
+  description:
+    "Information about shipping, delivery times, and returns for original artworks purchased from Frequency Framed.",
+};
 export default function ShippingReturnsPage() {
   return (
     <main className="pt-20 md:pt-24 pb-24 md:pb-32">

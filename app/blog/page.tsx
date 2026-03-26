@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { getPublishedPosts } from "@/lib/public-posts";
-
+export const metadata = {
+  title: "Art Journal | Numerology, Symbolism & Paintings",
+  description:
+    "Explore insights into numerology in art, symbolism, and the creative process behind original oil paintings.",
+};
 export default async function BlogPage() {
   const posts = await getPublishedPosts();
 

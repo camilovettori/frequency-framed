@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import Container from "@/components/ui/container";
 import AddToCartButton from "@/components/AddToCartButton";
 import { getPublishedArtworkBySlug } from "@/lib/public-artworks";
@@ -9,6 +10,27 @@ type ArtworkPageProps = {
     slug: string;
   }>;
 };
+
+export async function generateMetadata(
+  { params }: ArtworkPageProps
+): Promise<Metadata> {
+  const { slug } = await params;
+  const artwork = await getPublishedArtworkBySlug(slug);
+
+  if (!artwork) {
+    return {
+      title: "Artwork Not Found | Frequency Framed",
+      description: "The requested artwork could not be found.",
+    };
+  }
+
+  return {
+    title: `${artwork.title} | Original Oil Painting | Frequency Framed`,
+    description:
+      artwork.description?.trim() ||
+      "Original oil painting inspired by numerology and symbolism. One-of-a-kind artwork available for collectors.",
+  };
+}
 
 function formatMoney(cents: number) {
   return new Intl.NumberFormat("en-IE", {

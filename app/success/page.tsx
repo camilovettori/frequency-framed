@@ -1,6 +1,10 @@
 import Container from "@/components/ui/container";
 import ClearCartOnSuccess from "@/components/ClearCartOnSuccess";
-
+export const metadata = {
+  title: "Original Oil Paintings Ireland | Frequency Framed",
+  description:
+    "Discover original oil paintings blending art, numerology, and symbolism. Unique contemporary artworks available in Ireland and worldwide.",
+};
 export default function SuccessPage() {
   return (
     <main className="pt-20 md:pt-24 pb-24 md:pb-32">

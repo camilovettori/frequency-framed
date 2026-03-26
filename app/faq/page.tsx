@@ -1,5 +1,9 @@
 import Container from "@/components/ui/container";
-
+export const metadata = {
+  title: "FAQ | Buying Original Art & Paintings",
+  description:
+    "Frequently asked questions about buying original oil paintings, commissions, shipping, and artwork care.",
+};
 const faqs = [
   {
     question: "Are all artworks original?",

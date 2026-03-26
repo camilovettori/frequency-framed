@@ -6,7 +6,11 @@ import ArtworkCard from "@/components/ui/artwork-card";
 import { PublicArtwork } from "@/lib/public-artworks";
 
 const filters = ["All", "Numerology", "Nature", "Cosmic & Spiritual", "Symbols"];
-
+export const metadata = {
+  title: "Original Art Gallery | Oil Paintings for Sale Ireland",
+  description:
+    "Browse original oil paintings and abstract artworks. Unique pieces available for collectors in Ireland and international shipping.",
+};
 export default function GalleryPage() {
   const [artworks, setArtworks] = useState<PublicArtwork[]>([]);
   const [loading, setLoading] = useState(true);
