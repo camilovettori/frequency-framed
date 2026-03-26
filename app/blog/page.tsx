@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getPublishedPosts } from "@/lib/public-posts";
+export const dynamic = "force-dynamic";
 export const metadata = {
   title: "Art Journal | Numerology, Symbolism & Paintings",
   description:

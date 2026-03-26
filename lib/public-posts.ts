@@ -1,3 +1,4 @@
+import { unstable_noStore as noStore } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export type PublicPost = {
@@ -14,6 +15,8 @@ export type PublicPost = {
 };
 
 export async function getPublishedPosts(): Promise<PublicPost[]> {
+  noStore();
+
   const { data, error } = await supabaseAdmin
     .from("posts")
     .select("*")
@@ -31,6 +34,8 @@ export async function getPublishedPosts(): Promise<PublicPost[]> {
 export async function getPublishedPostBySlug(
   slug: string
 ): Promise<PublicPost | null> {
+  noStore();
+
   const { data, error } = await supabaseAdmin
     .from("posts")
     .select("*")
@@ -47,6 +52,8 @@ export async function getPublishedPostBySlug(
 }
 
 export async function getHomepageHeroPosts(): Promise<PublicPost[]> {
+  noStore();
+
   const { data, error } = await supabaseAdmin
     .from("posts")
     .select("*")
