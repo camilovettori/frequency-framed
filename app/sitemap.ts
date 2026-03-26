@@ -12,9 +12,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: `${baseUrl}/gallery`,
       lastModified: new Date(),
     },
-    {
-      url: `${baseUrl}/journal`,
-      lastModified: new Date(),
-    },
+    
+      {
+  url: `${baseUrl}/blog`,
+  lastModified: new Date(),
+},
   ];
 }
