@@ -32,6 +32,8 @@ export default function NewGalleryPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [secondaryDescription, setSecondaryDescription] = useState("");
   const [framing, setFraming] = useState("Available on request");
+  const [isHomeHero, setIsHomeHero] = useState(false);
+  const [homeHeroOrder, setHomeHeroOrder] = useState("");
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -84,6 +86,8 @@ export default function NewGalleryPage() {
   display_order: displayOrder,
   is_published: isPublished,
   featured,
+  is_home_hero: isHomeHero,
+  home_hero_order: homeHeroOrder,
   image_url: imageUrl,
 }),
       });
@@ -282,6 +286,48 @@ export default function NewGalleryPage() {
                 checked={isPublished}
                 onChange={(e) => setIsPublished(e.target.checked)}
               />
+
+<div className="space-y-3">
+  <label className="flex items-center gap-3 text-sm">
+    <input
+      type="checkbox"
+      checked={isPublished}
+      onChange={(e) => setIsPublished(e.target.checked)}
+    />
+    Published on site
+  </label>
+
+  <label className="flex items-center gap-3 text-sm">
+    <input
+      type="checkbox"
+      checked={featured}
+      onChange={(e) => setFeatured(e.target.checked)}
+    />
+    Featured artwork
+  </label>
+
+  <label className="flex items-center gap-3 text-sm">
+    <input
+      type="checkbox"
+      checked={isHomeHero}
+      onChange={(e) => setIsHomeHero(e.target.checked)}
+    />
+    Homepage hero
+  </label>
+</div>
+
+<div>
+  <label className="block text-xs uppercase tracking-[0.18em] text-[#8b6f5d]">
+    Hero Order
+  </label>
+  <input
+    type="number"
+    value={homeHeroOrder}
+    onChange={(e) => setHomeHeroOrder(e.target.value)}
+    className="mt-3 w-full border border-[#d8c6b5] px-4 py-3 outline-none"
+  />
+</div>
+              
               Published on site
             </label>
 
@@ -309,7 +355,11 @@ export default function NewGalleryPage() {
         >
           {saving ? "Creating..." : "Create Artwork"}
         </button>
+
+        
       </form>
     </div>
+
+    
   );
 }

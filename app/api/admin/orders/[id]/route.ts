@@ -76,10 +76,16 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Order not found." }, { status: 404 });
     }
 
+    const previousStatus = order.status || "";
+    const nextStatus = status || previousStatus;
+
+    const shouldOpenShippingLabel =
+      previousStatus !== "dispatched" && nextStatus === "dispatched";
+
     const { data: updatedOrder, error: updateError } = await supabaseAdmin
       .from("orders")
       .update({
-        status,
+        status: nextStatus,
         tracking_number: tracking_number || null,
         tracking_url: tracking_url || null,
         carrier: carrier || null,
@@ -137,6 +143,7 @@ Frequency Framed
     return NextResponse.json({
       success: true,
       order: updatedOrder,
+      should_open_shipping_label: shouldOpenShippingLabel,
     });
   } catch (error) {
     console.error("Admin order update error:", error);

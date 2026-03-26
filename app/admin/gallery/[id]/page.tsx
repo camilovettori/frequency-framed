@@ -27,6 +27,8 @@ type Artwork = {
   display_order: number | null;
   secondary_description: string | null;
 framing: string | null;
+is_home_hero: boolean;
+home_hero_order: number | null;
 };
 
 function slugify(value: string) {
@@ -64,6 +66,8 @@ export default function GalleryDetailPage({ params }: Props) {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [secondaryDescription, setSecondaryDescription] = useState("");
 const [framing, setFraming] = useState("");
+const [isHomeHero, setIsHomeHero] = useState(false);
+const [homeHeroOrder, setHomeHeroOrder] = useState("");
 
   useEffect(() => {
     async function resolveParams() {
@@ -107,6 +111,10 @@ const [framing, setFraming] = useState("");
       setFeatured(Boolean(artwork.featured));
       setImageUrl(artwork.image_url || "");
       setLoading(false);
+      setIsHomeHero(Boolean(artwork.is_home_hero));
+setHomeHeroOrder(
+  artwork.home_hero_order == null ? "" : String(artwork.home_hero_order)
+);
     }
 
     fetchArtwork();
@@ -160,6 +168,9 @@ const [framing, setFraming] = useState("");
   display_order: displayOrder,
   is_published: isPublished,
   featured,
+  is_home_hero: isHomeHero,
+home_hero_order: homeHeroOrder,
+  
   image_url: finalImageUrl,
 }),
       });
@@ -427,14 +438,38 @@ const [framing, setFraming] = useState("");
               Published on site
             </label>
 
-            <label className="flex items-center gap-3 text-sm">
+                       <div className="space-y-3">
+              <label className="flex items-center gap-3 text-sm">
+                <input
+                  type="checkbox"
+                  checked={isPublished}
+                  onChange={(e) => setIsPublished(e.target.checked)}
+                />
+               
+                Featured artwork
+              </label>
+
+              <label className="flex items-center gap-3 text-sm">
+                <input
+                  type="checkbox"
+                  checked={isHomeHero}
+                  onChange={(e) => setIsHomeHero(e.target.checked)}
+                />
+                Homepage hero
+              </label>
+            </div>
+
+            <div>
+              <label className="block text-xs uppercase tracking-[0.18em] text-[#8b6f5d]">
+                Hero Order
+              </label>
               <input
-                type="checkbox"
-                checked={featured}
-                onChange={(e) => setFeatured(e.target.checked)}
+                type="number"
+                value={homeHeroOrder}
+                onChange={(e) => setHomeHeroOrder(e.target.value)}
+                className="mt-3 w-full border border-[#d8c6b5] px-4 py-3 outline-none"
               />
-              Featured artwork
-            </label>
+            </div>
 
             {imageUrl ? (
               <img

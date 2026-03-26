@@ -16,9 +16,28 @@ export type PublicArtwork = {
   year: string | null;
   framing: string | null;
   featured: boolean;
+  is_home_hero: boolean;
+  home_hero_order: number | null;
   display_order: number | null;
 };
 
+
+export async function getHomepageHeroArtworks(): Promise<PublicArtwork[]> {
+  const { data, error } = await supabaseAdmin
+    .from("artworks")
+    .select("*")
+    .eq("is_published", true)
+    .eq("is_home_hero", true)
+    .order("home_hero_order", { ascending: true })
+    .order("title", { ascending: true });
+
+  if (error) {
+    console.error("getHomepageHeroArtworks error:", error);
+    return [];
+  }
+
+  return (data ?? []) as PublicArtwork[];
+}
 export async function getPublishedArtworks(): Promise<PublicArtwork[]> {
   const { data, error } = await supabaseAdmin
     .from("artworks")

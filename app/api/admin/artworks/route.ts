@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const payload = {
+   const payload = {
   slug,
   title,
   price_cents: Number(body.price_cents || 0),
@@ -72,6 +72,11 @@ export async function POST(request: NextRequest) {
   year: body.year || null,
   framing: body.framing || null,
   featured: Boolean(body.featured),
+  is_home_hero: Boolean(body.is_home_hero),
+  home_hero_order:
+    body.home_hero_order === "" || body.home_hero_order == null
+      ? null
+      : Number(body.home_hero_order),
   display_order:
     body.display_order === "" || body.display_order == null
       ? null

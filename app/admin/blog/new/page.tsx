@@ -1,26 +1,8 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClientBrowser } from "@/lib/supabase-browser";
-
-type Props = {
-  params: Promise<{
-    id: string;
-  }>;
-};
-
-type Post = {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt: string | null;
-  content: string | null;
-  cover_image_url: string | null;
-  is_published: boolean;
-  is_home_hero: boolean;
-  home_hero_order: number | null;
-};
 
 function slugify(value: string) {
   return value
@@ -31,15 +13,9 @@ function slugify(value: string) {
     .replace(/^-+|-+$/g, "");
 }
 
-export default function EditBlogPage({ params }: Props) {
+export default function NewBlogPage() {
   const router = useRouter();
   const supabase = useMemo(() => createClientBrowser(), []);
-
-  const [postId, setPostId] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [error, setError] = useState("");
 
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
@@ -51,45 +27,8 @@ export default function EditBlogPage({ params }: Props) {
   const [isHomeHero, setIsHomeHero] = useState(false);
   const [homeHeroOrder, setHomeHeroOrder] = useState("");
 
-  useEffect(() => {
-    async function resolveParams() {
-      const resolved = await params;
-      setPostId(resolved.id);
-    }
-
-    resolveParams();
-  }, [params]);
-
-  useEffect(() => {
-    if (!postId) return;
-
-    async function fetchPost() {
-      const response = await fetch(`/api/admin/posts/${postId}`);
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || "Failed to load post.");
-        setLoading(false);
-        return;
-      }
-
-      const post: Post = data.post;
-
-      setTitle(post.title || "");
-      setSlug(post.slug || "");
-      setExcerpt(post.excerpt || "");
-      setContent(post.content || "");
-      setCoverImageUrl(post.cover_image_url || "");
-      setIsPublished(Boolean(post.is_published));
-      setIsHomeHero(Boolean(post.is_home_hero));
-      setHomeHeroOrder(
-        post.home_hero_order == null ? "" : String(post.home_hero_order)
-      );
-      setLoading(false);
-    }
-
-    fetchPost();
-  }, [postId]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   async function uploadImage() {
     if (!coverFile) return coverImageUrl || null;
@@ -117,8 +56,8 @@ export default function EditBlogPage({ params }: Props) {
     try {
       const finalCoverImageUrl = await uploadImage();
 
-      const response = await fetch(`/api/admin/posts/${postId}`, {
-        method: "PATCH",
+      const response = await fetch("/api/admin/posts", {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
@@ -137,72 +76,27 @@ export default function EditBlogPage({ params }: Props) {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to update post.");
+        throw new Error(data.error || "Failed to create post.");
       }
 
       router.push("/admin/blog");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update post.");
+      setError(err instanceof Error ? err.message : "Failed to create post.");
     } finally {
       setSaving(false);
     }
   }
 
-  async function handleDelete() {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this post?"
-    );
-
-    if (!confirmed) return;
-
-    setDeleting(true);
-    setError("");
-
-    try {
-      const response = await fetch(`/api/admin/posts/${postId}`, {
-        method: "DELETE",
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to delete post.");
-      }
-
-      router.push("/admin/blog");
-      router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete post.");
-    } finally {
-      setDeleting(false);
-    }
-  }
-
-  if (loading) {
-    return <div className="text-[#4b3226]">Loading post...</div>;
-  }
-
   return (
     <div className="space-y-8 text-[#4b3226]">
-      <div className="flex items-end justify-between gap-6">
-        <div>
-          <p className="text-xs uppercase tracking-[0.28em] text-[#8b6f5d]">
-            Blog Management
-          </p>
-          <h1 className="mt-4 text-5xl leading-none tracking-[-0.03em]">
-            Edit Post
-          </h1>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleDelete}
-          disabled={deleting}
-          className="inline-flex items-center justify-center border border-red-700 px-6 py-4 text-sm uppercase tracking-[0.18em] text-red-700 transition hover:bg-red-700 hover:text-white disabled:opacity-60"
-        >
-          {deleting ? "Deleting..." : "Delete Post"}
-        </button>
+      <div>
+        <p className="text-xs uppercase tracking-[0.28em] text-[#8b6f5d]">
+          Blog Management
+        </p>
+        <h1 className="mt-4 text-5xl leading-none tracking-[-0.03em]">
+          New Post
+        </h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
@@ -274,7 +168,7 @@ export default function EditBlogPage({ params }: Props) {
 
             <div>
               <label className="block text-xs uppercase tracking-[0.18em] text-[#8b6f5d]">
-                Replace Cover Image
+                Upload Cover Image
               </label>
               <input
                 type="file"
@@ -315,14 +209,6 @@ export default function EditBlogPage({ params }: Props) {
                 className="mt-3 w-full border border-[#d8c6b5] px-4 py-3 outline-none"
               />
             </div>
-
-            {coverImageUrl ? (
-              <img
-                src={coverImageUrl}
-                alt={title}
-                className="mt-3 max-h-72 border border-[#e7d9ca] object-cover"
-              />
-            ) : null}
           </div>
         </div>
 
@@ -337,7 +223,7 @@ export default function EditBlogPage({ params }: Props) {
           disabled={saving}
           className="inline-flex items-center justify-center bg-[#4b3226] px-6 py-4 text-sm uppercase tracking-[0.18em] text-white transition hover:opacity-90 disabled:opacity-60"
         >
-          {saving ? "Saving..." : "Save Changes"}
+          {saving ? "Creating..." : "Create Post"}
         </button>
       </form>
     </div>

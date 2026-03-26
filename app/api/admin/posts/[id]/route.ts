@@ -21,24 +21,21 @@ export async function GET(_: NextRequest, context: RouteContext) {
     const { id } = await context.params;
 
     const { data, error } = await supabaseAdmin
-      .from("artworks")
+      .from("posts")
       .select("*")
       .eq("id", id)
       .single();
 
     if (error || !data) {
-      return NextResponse.json(
-        { error: "Artwork not found." },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Post not found." }, { status: 404 });
     }
 
-    return NextResponse.json({ artwork: data });
+    return NextResponse.json({ post: data });
   } catch (error) {
-    console.error("Admin artwork GET by id error:", error);
+    console.error("Admin post GET error:", error);
 
     return NextResponse.json(
-      { error: "Something went wrong while loading artwork." },
+      { error: "Something went wrong while loading post." },
       { status: 500 }
     );
   }
@@ -59,34 +56,22 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       );
     }
 
-  const payload = {
-  slug,
-  title,
-  price_cents: Number(body.price_cents || 0),
-  image_url: body.image_url || null,
-  status: body.status || "available",
-  category: body.category || null,
-  description: body.description || null,
-  secondary_description: body.secondary_description || null,
-  is_published: Boolean(body.is_published),
-  medium: body.medium || null,
-  dimensions: body.dimensions || null,
-  year: body.year || null,
-  framing: body.framing || null,
-  featured: Boolean(body.featured),
-  is_home_hero: Boolean(body.is_home_hero),
-  home_hero_order:
-    body.home_hero_order === "" || body.home_hero_order == null
-      ? null
-      : Number(body.home_hero_order),
-  display_order:
-    body.display_order === "" || body.display_order == null
-      ? null
-      : Number(body.display_order),
-};
+    const payload = {
+      title,
+      slug,
+      excerpt: body.excerpt || null,
+      content: body.content || null,
+      cover_image_url: body.cover_image_url || null,
+      is_published: Boolean(body.is_published),
+      is_home_hero: Boolean(body.is_home_hero),
+      home_hero_order:
+        body.home_hero_order === "" || body.home_hero_order == null
+          ? null
+          : Number(body.home_hero_order),
+    };
 
     const { data, error } = await supabaseAdmin
-      .from("artworks")
+      .from("posts")
       .update(payload)
       .eq("id", id)
       .select("*")
@@ -94,17 +79,17 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
     if (error || !data) {
       return NextResponse.json(
-        { error: error?.message || "Failed to update artwork." },
+        { error: error?.message || "Failed to update post." },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ artwork: data });
+    return NextResponse.json({ post: data });
   } catch (error) {
-    console.error("Admin artwork PATCH error:", error);
+    console.error("Admin post PATCH error:", error);
 
     return NextResponse.json(
-      { error: "Something went wrong while updating artwork." },
+      { error: "Something went wrong while updating post." },
       { status: 500 }
     );
   }
@@ -115,23 +100,23 @@ export async function DELETE(_: NextRequest, context: RouteContext) {
     const { id } = await context.params;
 
     const { error } = await supabaseAdmin
-      .from("artworks")
+      .from("posts")
       .delete()
       .eq("id", id);
 
     if (error) {
       return NextResponse.json(
-        { error: "Failed to delete artwork." },
+        { error: "Failed to delete post." },
         { status: 500 }
       );
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Admin artwork DELETE error:", error);
+    console.error("Admin post DELETE error:", error);
 
     return NextResponse.json(
-      { error: "Something went wrong while deleting artwork." },
+      { error: "Something went wrong while deleting post." },
       { status: 500 }
     );
   }

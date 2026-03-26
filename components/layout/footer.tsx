@@ -20,18 +20,31 @@ export default function Footer() {
 
           {/* RIGHT */}
           <div className="flex flex-col md:items-end gap-4 text-sm">
-            <Link href="/faq" className="hover:text-[var(--foreground)] transition">
+            <Link
+              href="/blog"
+              className="opacity-70 hover:opacity-100 hover:text-[var(--foreground)] transition"
+            >
+              Journal
+            </Link>
+
+            <Link
+              href="/faq"
+              className="opacity-70 hover:opacity-100 hover:text-[var(--foreground)] transition"
+            >
               FAQ
             </Link>
 
             <Link
               href="/shipping-returns"
-              className="hover:text-[var(--foreground)] transition"
+              className="opacity-70 hover:opacity-100 hover:text-[var(--foreground)] transition"
             >
               Shipping & Returns
             </Link>
 
-            <Link href="/contact" className="hover:text-[var(--foreground)] transition">
+            <Link
+              href="/contact"
+              className="opacity-70 hover:opacity-100 hover:text-[var(--foreground)] transition"
+            >
               Contact
             </Link>
           </div>
