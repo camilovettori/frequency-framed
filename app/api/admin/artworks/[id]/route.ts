@@ -60,23 +60,25 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     }
 
     const payload = {
-      slug,
-      title,
-      price_cents: Number(body.price_cents || 0),
-      image_url: body.image_url || null,
-      status: body.status || "available",
-      category: body.category || null,
-      description: body.description || null,
-      is_published: Boolean(body.is_published),
-      medium: body.medium || null,
-      dimensions: body.dimensions || null,
-      year: body.year || null,
-      featured: Boolean(body.featured),
-      display_order:
-        body.display_order === "" || body.display_order == null
-          ? null
-          : Number(body.display_order),
-    };
+  slug,
+  title,
+  price_cents: Number(body.price_cents || 0),
+  image_url: body.image_url || null,
+  status: body.status || "available",
+  category: body.category || null,
+  description: body.description || null,
+  secondary_description: body.secondary_description || null,
+  is_published: Boolean(body.is_published),
+  medium: body.medium || null,
+  dimensions: body.dimensions || null,
+  year: body.year || null,
+  framing: body.framing || null,
+  featured: Boolean(body.featured),
+  display_order:
+    body.display_order === "" || body.display_order == null
+      ? null
+      : Number(body.display_order),
+};
 
     const { data, error } = await supabaseAdmin
       .from("artworks")

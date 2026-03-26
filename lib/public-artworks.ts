@@ -5,6 +5,7 @@ export type PublicArtwork = {
   slug: string;
   title: string;
   description: string | null;
+  secondary_description: string | null;
   category: string | null;
   price_cents: number;
   image_url: string | null;
@@ -13,6 +14,7 @@ export type PublicArtwork = {
   medium: string | null;
   dimensions: string | null;
   year: string | null;
+  framing: string | null;
   featured: boolean;
   display_order: number | null;
 };

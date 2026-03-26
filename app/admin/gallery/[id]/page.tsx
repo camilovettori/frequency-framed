@@ -25,6 +25,8 @@ type Artwork = {
   year: string | null;
   featured: boolean;
   display_order: number | null;
+  secondary_description: string | null;
+framing: string | null;
 };
 
 function slugify(value: string) {
@@ -60,6 +62,8 @@ export default function GalleryDetailPage({ params }: Props) {
   const [featured, setFeatured] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [secondaryDescription, setSecondaryDescription] = useState("");
+const [framing, setFraming] = useState("");
 
   useEffect(() => {
     async function resolveParams() {
@@ -93,6 +97,8 @@ export default function GalleryDetailPage({ params }: Props) {
       setDescription(artwork.description || "");
       setMedium(artwork.medium || "");
       setDimensions(artwork.dimensions || "");
+      setSecondaryDescription(artwork.secondary_description || "");
+      setFraming(artwork.framing || "");
       setYear(artwork.year || "");
       setDisplayOrder(
         artwork.display_order == null ? "" : String(artwork.display_order)
@@ -140,20 +146,22 @@ export default function GalleryDetailPage({ params }: Props) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          title,
-          slug: slug || slugify(title),
-          price_cents: Math.round(Number(price || 0) * 100),
-          status,
-          category,
-          description,
-          medium,
-          dimensions,
-          year,
-          display_order: displayOrder,
-          is_published: isPublished,
-          featured,
-          image_url: finalImageUrl,
-        }),
+  title,
+  slug: slug || slugify(title),
+  price_cents: Math.round(Number(price || 0) * 100),
+  status,
+  category,
+  description,
+  secondary_description: secondaryDescription,
+  medium,
+  dimensions,
+  year,
+  framing,
+  display_order: displayOrder,
+  is_published: isPublished,
+  featured,
+  image_url: finalImageUrl,
+}),
       });
 
       const data = await response.json();
@@ -317,6 +325,17 @@ export default function GalleryDetailPage({ params }: Props) {
               />
             </div>
           </div>
+          <div>
+  <label className="block text-xs uppercase tracking-[0.18em] text-[#8b6f5d]">
+    Secondary Description
+  </label>
+  <textarea
+    value={secondaryDescription}
+    onChange={(e) => setSecondaryDescription(e.target.value)}
+    rows={5}
+    className="mt-3 w-full border border-[#d8c6b5] px-4 py-3 outline-none"
+  />
+</div>
 
           <div className="border border-[#e7d9ca] bg-white p-6 space-y-5">
             <div>
@@ -365,6 +384,16 @@ export default function GalleryDetailPage({ params }: Props) {
                 />
               </div>
             </div>
+            <div>
+  <label className="block text-xs uppercase tracking-[0.18em] text-[#8b6f5d]">
+    Framing
+  </label>
+  <input
+    value={framing}
+    onChange={(e) => setFraming(e.target.value)}
+    className="mt-3 w-full border border-[#d8c6b5] px-4 py-3 outline-none"
+  />
+</div>
 
             <div>
               <label className="block text-xs uppercase tracking-[0.18em] text-[#8b6f5d]">

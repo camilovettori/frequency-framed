@@ -30,6 +30,8 @@ export default function NewGalleryPage() {
   const [isPublished, setIsPublished] = useState(true);
   const [featured, setFeatured] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [secondaryDescription, setSecondaryDescription] = useState("");
+  const [framing, setFraming] = useState("Available on request");
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -68,20 +70,22 @@ export default function NewGalleryPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          title,
-          slug: slug || slugify(title),
-          price_cents: Math.round(Number(price || 0) * 100),
-          status,
-          category,
-          description,
-          medium,
-          dimensions,
-          year,
-          display_order: displayOrder,
-          is_published: isPublished,
-          featured,
-          image_url: imageUrl,
-        }),
+  title,
+  slug: slug || slugify(title),
+  price_cents: Math.round(Number(price || 0) * 100),
+  status,
+  category,
+  description,
+  secondary_description: secondaryDescription,
+  medium,
+  dimensions,
+  year,
+  framing,
+  display_order: displayOrder,
+  is_published: isPublished,
+  featured,
+  image_url: imageUrl,
+}),
       });
 
       const data = await response.json();
@@ -235,6 +239,17 @@ export default function NewGalleryPage() {
                   className="mt-3 w-full border border-[#d8c6b5] px-4 py-3 outline-none"
                 />
               </div>
+
+              <div>
+  <label className="block text-xs uppercase tracking-[0.18em] text-[#8b6f5d]">
+    Framing
+  </label>
+  <input
+    value={framing}
+    onChange={(e) => setFraming(e.target.value)}
+    className="mt-3 w-full border border-[#d8c6b5] px-4 py-3 outline-none"
+  />
+</div>
 
               <div>
                 <label className="block text-xs uppercase tracking-[0.18em] text-[#8b6f5d]">

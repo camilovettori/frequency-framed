@@ -110,10 +110,9 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
               </p>
 
               <p>
-                This artwork is part of the Frequency Framed collection and was
-                created as a one-of-a-kind piece, intended to bring atmosphere,
-                reflection, and identity into a space.
-              </p>
+  {artwork.secondary_description ||
+    "This artwork is part of the Frequency Framed collection and was created as a one-of-a-kind piece, intended to bring atmosphere, reflection, and identity into a space."}
+</p>
             </div>
 
             <div className="mt-10 grid grid-cols-1 gap-6 border-t border-[var(--border)] pt-8 sm:grid-cols-2">
@@ -149,8 +148,8 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
                   Framing
                 </p>
                 <p className="mt-2 text-[var(--foreground)]">
-                  Available on request
-                </p>
+  {artwork.framing || "Available on request"}
+</p>
               </div>
             </div>
 
