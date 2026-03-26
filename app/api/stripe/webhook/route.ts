@@ -277,7 +277,7 @@ export async function POST(request: Request) {
           paymentIntent.metadata.shipping_country?.trim() || "";
 
         const itemIdsRaw = paymentIntent.metadata.item_ids || "";
-        const itemSlugs = unique(
+        const itemIds = unique(
           itemIdsRaw
             .split(",")
             .map((value) => value.trim())
@@ -289,8 +289,8 @@ export async function POST(request: Request) {
           break;
         }
 
-        if (itemSlugs.length === 0) {
-          console.error("No artwork slugs found in payment intent metadata.", {
+        if (itemIds.length === 0) {
+          console.error("No artwork ids found in payment intent metadata.", {
             paymentIntentId,
             metadata: paymentIntent.metadata,
           });
@@ -323,7 +323,7 @@ export async function POST(request: Request) {
         const { data: artworksData, error: artworksError } = await supabaseAdmin
           .from("artworks")
           .select("id, slug, title, price_cents, status")
-          .in("slug", itemSlugs);
+          .in("id", itemIds);
 
         if (artworksError) {
           console.error("Failed fetching artworks in webhook:", artworksError);
@@ -335,11 +335,11 @@ export async function POST(request: Request) {
 
         const artworks = (artworksData ?? []) as ArtworkRow[];
 
-        if (artworks.length !== itemSlugs.length) {
+        if (artworks.length !== itemIds.length) {
           console.error("Webhook artwork mismatch.", {
             paymentIntentId,
-            expected: itemSlugs,
-            found: artworks.map((artwork) => artwork.slug),
+            expected: itemIds,
+            found: artworks.map((artwork) => artwork.id),
           });
 
           return NextResponse.json(
@@ -356,7 +356,7 @@ export async function POST(request: Request) {
           console.error("Webhook found unavailable artworks.", {
             paymentIntentId,
             unavailable: unavailable.map((artwork) => ({
-              slug: artwork.slug,
+              id: artwork.id,
               status: artwork.status,
             })),
           });
@@ -494,7 +494,7 @@ export async function POST(request: Request) {
         const { error: updateArtworksError } = await supabaseAdmin
           .from("artworks")
           .update({ status: "sold" })
-          .in("slug", itemSlugs);
+          .in("id", itemIds);
 
         if (updateArtworksError) {
           console.error("Failed marking artworks as sold:", updateArtworksError);
@@ -631,7 +631,7 @@ ${shippingAddress || "No delivery address provided"}`,
           orderId,
           orderNumber,
           customerEmail,
-          artworks: itemSlugs,
+          artworks: itemIds,
         });
 
         break;
@@ -654,11 +654,11 @@ ${shippingAddress || "No delivery address provided"}`,
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error("Webhook handler error:", error);
+  console.error("Webhook handler error:", error);
 
-    return NextResponse.json(
-      { error: "Webhook handler failed." },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json(
+    { error: "Webhook handler failed." },
+    { status: 500 }
+  );
 }
+  }
