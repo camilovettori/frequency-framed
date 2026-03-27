@@ -55,44 +55,7 @@ export default function Header() {
             </Link>
           </nav>
 
-          <nav className="grid w-full grid-cols-3 gap-x-4 gap-y-3 border-t border-[var(--border)] pt-4 text-center text-[10px] uppercase tracking-[0.1em] text-[var(--muted)] sm:hidden">
-            <Link
-              href="/about"
-              className="transition-colors duration-300 hover:text-[var(--foreground)]"
-            >
-              About
-            </Link>
-
-            <Link
-              href="/gallery"
-              className="transition-colors duration-300 hover:text-[var(--foreground)]"
-            >
-              Gallery
-            </Link>
-
-            <Link
-              href="/commissions"
-              className="transition-colors duration-300 hover:text-[var(--foreground)]"
-            >
-              Commissions
-            </Link>
-
-            <Link
-              href="/contact"
-              className="transition-colors duration-300 hover:text-[var(--foreground)]"
-            >
-              Contact
-            </Link>
-
-            <Link
-              href="/cart"
-              className="transition-colors duration-300 hover:text-[var(--foreground)]"
-            >
-              Cart
-            </Link>
-          </nav>
-
-          <nav className="hidden w-full items-center justify-center gap-5 text-[11px] uppercase tracking-[0.12em] text-[var(--muted)] sm:flex md:hidden">
+          <nav className="flex w-full items-center justify-center gap-4 border-t border-[var(--border)] pt-4 text-[10px] uppercase tracking-[0.08em] text-[var(--muted)] md:hidden">
             <Link
               href="/about"
               className="transition-colors duration-300 hover:text-[var(--foreground)]"
