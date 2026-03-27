@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎨 Frequency Framed – Full-Stack E-commerce Platform
 
-## Getting Started
+A full-stack e-commerce web application developed using modern web technologies, featuring real payment processing, admin management, and dynamic content handling.
 
-First, run the development server:
+## 🔗 Live Project
+👉 https://www.frequencyframed.ie
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🚀 Key Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- 🛒 Fully functional shopping cart system  
+- 💳 Stripe integration (Payments, Apple Pay, Google Pay)  
+- 📦 Order processing with database persistence  
+- 🔐 Authentication system with admin panel  
+- 🖼️ Artwork inventory management (stock control: available/sold/reserved)  
+- 📧 Automated email notifications (customer & admin)  
+- 📝 Blog CMS with rich text editor  
+- 📱 Fully responsive (mobile-first design)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 🛠 Tech Stack
 
-To learn more about Next.js, take a look at the following resources:
+### Frontend
+- Next.js (App Router)
+- React (TypeScript)
+- Tailwind CSS
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Backend
+- Next.js API Routes (serverless functions)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Database & Auth
+- Supabase (PostgreSQL + Authentication)
 
-## Deploy on Vercel
+### Payments
+- Stripe (Payment Intents + Webhooks)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Emails
+- Resend API
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Deployment
+- Vercel (Frontend & API)
+- Supabase (Database & Storage)
+
+---
+
+## ⚙️ Architecture Overview
+
+- Serverless backend using Next.js API routes  
+- Stripe webhook system for secure payment handling  
+- PostgreSQL database structure for orders, customers, and inventory  
+- Role-based admin access for content and order management  
+
+---
+
+## 📌 Project Purpose
+
+This project was built to simulate a real-world e-commerce business, demonstrating the ability to:
+
+- Design and develop full-stack applications  
+- Integrate third-party services (Stripe, Supabase)  
+- Manage real data and transactions  
+- Build scalable and maintainable systems  
+
+---
+
+## 💡 Notes
+
+This project represents hands-on experience in building production-level web applications, including real payment flows, database design, and deployment pipelines.
+
+---
+
+## 👨‍💻 Author
+
+Camilo Vettori  
+👉 https://github.com/camilovettori
