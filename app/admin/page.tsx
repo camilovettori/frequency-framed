@@ -1,6 +1,7 @@
 import StatCard from "@/components/admin/StatCard";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 async function getDashboardStats() {
   const [
     ordersCount,
