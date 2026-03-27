@@ -211,19 +211,27 @@ export default function CheckoutPage() {
     <main className="pt-20 md:pt-24 pb-24 md:pb-32">
       <Container>
         <section className="max-w-4xl">
-          <p className="text-xs uppercase tracking-[0.28em] text-[var(--muted)]">
-            Checkout
-          </p>
+  <p className="text-xs uppercase tracking-[0.28em] text-[var(--muted)]">
+    Checkout
+  </p>
 
-          <h1 className="mt-6 text-5xl md:text-7xl leading-[0.95] tracking-[-0.03em] text-[var(--foreground)]">
-            Delivery & Payment
-          </h1>
+  <h1 className="mt-6 text-5xl md:text-7xl leading-[0.95] tracking-[-0.03em] text-[var(--foreground)]">
+    Delivery & Payment
+  </h1>
 
-          <p className="mt-8 max-w-3xl text-[20px] md:text-[22px] leading-[1.5] text-[var(--muted)]">
-            Complete your details below to prepare your order and pay securely
-            on-site.
-          </p>
-        </section>
+  <p className="mt-8 max-w-3xl text-[20px] md:text-[22px] leading-[1.5] text-[var(--muted)]">
+    Complete your details below to prepare your order and pay securely
+    on-site.
+  </p>
+
+  <p className="mt-4 max-w-3xl text-sm md:text-base leading-[1.7] text-[var(--muted)]">
+    We offer free delivery within the Republic of Ireland and Northern Ireland.
+    <br />
+    For international orders, please contact us to arrange shipping and receive
+    a tailored quote.
+  </p>
+</section>
+          
 
         {removedItems.length > 0 && (
           <section className="mt-10 border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
@@ -386,9 +394,9 @@ export default function CheckoutPage() {
                       className="mt-3 w-full border border-[var(--border)] bg-white px-5 py-4 outline-none transition-all duration-300 focus:border-[var(--foreground)] focus:shadow-[0_0_0_1px_var(--foreground)]"
                     >
                       <option>Ireland</option>
+                      <option>North Ireland</option>
                       <option>United Kingdom</option>
                       <option>Portugal</option>
-                      <option>Brazil</option>
                       <option>Spain</option>
                       <option>France</option>
                       <option>Germany</option>
