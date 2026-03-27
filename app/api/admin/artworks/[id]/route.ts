@@ -33,6 +33,16 @@ export async function GET(_: NextRequest, { params }: RouteContext) {
           id,
           image_url,
           sort_order
+        ),
+        artwork_reviews (
+          id,
+          reviewer_name,
+          reviewer_role,
+          review_text,
+          rating,
+          sort_order,
+          is_published,
+          created_at
         )
       `)
       .eq("id", id)
@@ -87,8 +97,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
           )
           .map((item: GalleryImageInput, index: number) => ({
             image_url: item.image_url.trim(),
-            sort_order:
-              item.sort_order == null ? index : Number(item.sort_order),
+            sort_order: item.sort_order == null ? index : Number(item.sort_order),
           }))
       : [];
 
@@ -179,6 +188,16 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
           id,
           image_url,
           sort_order
+        ),
+        artwork_reviews (
+          id,
+          reviewer_name,
+          reviewer_role,
+          review_text,
+          rating,
+          sort_order,
+          is_published,
+          created_at
         )
       `)
       .eq("id", id)

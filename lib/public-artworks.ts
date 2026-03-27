@@ -6,6 +6,15 @@ export type PublicArtworkImage = {
   sort_order: number | null;
 };
 
+export type PublicArtworkReview = {
+  id: string;
+  reviewer_name: string;
+  reviewer_role: string | null;
+  review_text: string;
+  sort_order: number | null;
+  is_published: boolean;
+};
+
 export type PublicArtwork = {
   id: string;
   slug: string;
@@ -26,6 +35,7 @@ export type PublicArtwork = {
   home_hero_order: number | null;
   display_order: number | null;
   artwork_images?: PublicArtworkImage[];
+  artwork_reviews?: PublicArtworkReview[];
 };
 
 export async function getHomepageHeroArtworks(): Promise<PublicArtwork[]> {
@@ -90,6 +100,14 @@ export async function getPublishedArtworkBySlug(
         id,
         image_url,
         sort_order
+      ),
+      artwork_reviews (
+        id,
+        reviewer_name,
+        reviewer_role,
+        review_text,
+        sort_order,
+        is_published
       )
     `)
     .eq("slug", slug)
@@ -100,5 +118,19 @@ export async function getPublishedArtworkBySlug(
     return null;
   }
 
-  return data as PublicArtwork;
+  const artwork = data as PublicArtwork;
+
+  if (artwork.artwork_images) {
+    artwork.artwork_images = artwork.artwork_images
+      .slice()
+      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  }
+
+  if (artwork.artwork_reviews) {
+    artwork.artwork_reviews = artwork.artwork_reviews
+      .filter((review) => review.is_published)
+      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  }
+
+  return artwork;
 }

@@ -197,6 +197,42 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
           </div>
         </section>
       </Container>
+{artwork.artwork_reviews && artwork.artwork_reviews.length > 0 && (
+  <section className="mt-20 border-t border-[var(--border)]/70 pt-12">
+    <Container>
+      <div className="max-w-4xl">
+        <p className="text-xs uppercase tracking-[0.28em] text-[var(--muted)]">
+          Collector Reflections
+        </p>
+
+        <div className="mt-10 space-y-10">
+          {artwork.artwork_reviews.map((review) => (
+            <div key={review.id} className="space-y-4">
+              <p className="text-[18px] md:text-[20px] leading-[1.6] text-[var(--foreground)]">
+                “{review.review_text}”
+              </p>
+
+              <div className="text-sm text-[var(--muted)]">
+                <span className="block font-medium text-[var(--foreground)]">
+                  {review.reviewer_name}
+                </span>
+
+                {review.reviewer_role && (
+                  <span className="block text-xs uppercase tracking-[0.18em]">
+                    {review.reviewer_role}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </Container>
+  </section>
+)}
+
+
+
     </main>
   );
 }

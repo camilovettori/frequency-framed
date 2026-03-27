@@ -16,6 +16,16 @@ type ArtworkImage = {
   sort_order: number | null;
 };
 
+type ArtworkReview = {
+  id: string;
+  reviewer_name: string;
+  reviewer_role: string | null;
+  review_text: string;
+  rating: number | null;
+  is_published: boolean;
+  created_at?: string | null;
+};
+
 type Artwork = {
   id: string;
   title: string;
@@ -36,6 +46,7 @@ type Artwork = {
   is_home_hero: boolean;
   home_hero_order: number | null;
   artwork_images?: ArtworkImage[];
+  artwork_reviews?: ArtworkReview[];
 };
 
 type GalleryImageInput = {
@@ -86,6 +97,10 @@ export default function GalleryDetailPage({ params }: Props) {
   >([]);
   const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
   const [newImagePreviewUrls, setNewImagePreviewUrls] = useState<string[]>([]);
+
+  const [reviews, setReviews] = useState<ArtworkReview[]>([]);
+  const [reviewsBusyId, setReviewsBusyId] = useState<string>("");
+  const [reviewsError, setReviewsError] = useState("");
 
   useEffect(() => {
     async function resolveParams() {
@@ -143,6 +158,18 @@ export default function GalleryDetailPage({ params }: Props) {
           })) ?? [];
 
       setExistingGalleryImages(sortedExistingImages);
+
+      const sortedReviews =
+        artwork.artwork_reviews
+          ?.slice()
+          .sort((a, b) => {
+            const aPublished = a.is_published ? 0 : 1;
+            const bPublished = b.is_published ? 0 : 1;
+            if (aPublished !== bPublished) return aPublished - bPublished;
+            return (b.created_at || "").localeCompare(a.created_at || "");
+          }) ?? [];
+
+      setReviews(sortedReviews);
       setLoading(false);
     }
 
@@ -311,6 +338,74 @@ export default function GalleryDetailPage({ params }: Props) {
       setError(err instanceof Error ? err.message : "Failed to delete artwork.");
     } finally {
       setDeleting(false);
+    }
+  }
+
+  async function toggleReviewPublish(review: ArtworkReview) {
+    setReviewsBusyId(review.id);
+    setReviewsError("");
+
+    try {
+      const response = await fetch(`/api/admin/reviews/${review.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          is_published: !review.is_published,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to update review.");
+      }
+
+      setReviews((prev) =>
+        prev.map((item) =>
+          item.id === review.id
+            ? { ...item, is_published: data.review.is_published }
+            : item
+        )
+      );
+    } catch (err) {
+      setReviewsError(
+        err instanceof Error ? err.message : "Failed to update review."
+      );
+    } finally {
+      setReviewsBusyId("");
+    }
+  }
+
+  async function deleteReview(review: ArtworkReview) {
+    const confirmed = window.confirm(
+      `Delete review from ${review.reviewer_name}?`
+    );
+
+    if (!confirmed) return;
+
+    setReviewsBusyId(review.id);
+    setReviewsError("");
+
+    try {
+      const response = await fetch(`/api/admin/reviews/${review.id}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to delete review.");
+      }
+
+      setReviews((prev) => prev.filter((item) => item.id !== review.id));
+    } catch (err) {
+      setReviewsError(
+        err instanceof Error ? err.message : "Failed to delete review."
+      );
+    } finally {
+      setReviewsBusyId("");
     }
   }
 
@@ -675,6 +770,101 @@ export default function GalleryDetailPage({ params }: Props) {
           {saving ? "Saving..." : "Save Changes"}
         </button>
       </form>
+
+      <section className="space-y-5 border border-[#e7d9ca] bg-white p-6">
+        <div>
+          <p className="text-xs uppercase tracking-[0.28em] text-[#8b6f5d]">
+            Collector Reflections
+          </p>
+          <h2 className="mt-3 text-3xl leading-none tracking-[-0.03em]">
+            Reviews
+          </h2>
+          <p className="mt-3 text-sm text-[#6c5445]">
+            Approve or remove customer reviews for this artwork.
+          </p>
+        </div>
+
+        {reviewsError && (
+          <div className="border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            {reviewsError}
+          </div>
+        )}
+
+        {reviews.length === 0 ? (
+          <div className="border border-dashed border-[#d8c6b5] bg-[#fbf8f4] px-5 py-6 text-sm text-[#8b6f5d]">
+            No reviews yet for this artwork.
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {reviews.map((review) => (
+              <div
+                key={review.id}
+                className="border border-[#eadfd3] bg-[#fbf8f4] p-5"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <p className="text-lg text-[#4b3226]">
+                      {review.reviewer_name}
+                    </p>
+
+                    {review.reviewer_role ? (
+                      <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-[#8b6f5d]">
+                        {review.reviewer_role}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`inline-flex items-center justify-center px-3 py-2 text-[10px] uppercase tracking-[0.18em] ${
+                        review.is_published
+                          ? "bg-[#4b3226] text-white"
+                          : "border border-[#d8c6b5] bg-white text-[#8b6f5d]"
+                      }`}
+                    >
+                      {review.is_published ? "Published" : "Pending"}
+                    </span>
+
+                    {review.rating ? (
+                      <span className="text-sm text-[#4b3226]">
+                        {"★".repeat(review.rating)}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+
+                <p className="mt-4 text-[16px] leading-8 text-[#6c5445]">
+                  “{review.review_text}”
+                </p>
+
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => toggleReviewPublish(review)}
+                    disabled={reviewsBusyId === review.id}
+                    className="inline-flex items-center justify-center bg-[#4b3226] px-5 py-3 text-xs uppercase tracking-[0.16em] text-white transition hover:opacity-90 disabled:opacity-60"
+                  >
+                    {reviewsBusyId === review.id
+                      ? "Updating..."
+                      : review.is_published
+                      ? "Unpublish"
+                      : "Publish"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => deleteReview(review)}
+                    disabled={reviewsBusyId === review.id}
+                    className="inline-flex items-center justify-center border border-red-700 bg-white px-5 py-3 text-xs uppercase tracking-[0.16em] text-red-700 transition hover:bg-red-700 hover:text-white disabled:opacity-60"
+                  >
+                    {reviewsBusyId === review.id ? "Working..." : "Delete"}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

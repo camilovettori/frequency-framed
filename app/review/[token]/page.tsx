@@ -96,21 +96,12 @@ function renderStatusEmailHtml({
 }) {
   const showTracking = status === "dispatched";
   const showReview = status === "delivered" && Boolean(reviewUrl);
-  const siteUrl = getSiteUrl();
-  const logoUrl = `${siteUrl}/images/logo.png`;
-  const signatureUrl = `${siteUrl}/images/natan-signature.png`;
 
   return `
   <div style="margin:0;padding:0;background:#f7f2ec;font-family:Arial,Helvetica,sans-serif;color:#3d2b22;">
     <div style="max-width:640px;margin:0 auto;padding:40px 20px;">
       <div style="background:#ffffff;border:1px solid #eadfd3;padding:40px 32px;box-shadow:0 12px 30px rgba(0,0,0,0.04);">
-        
         <div style="text-align:center;padding-bottom:24px;border-bottom:1px solid #efe5da;">
-          <img
-            src="${logoUrl}"
-            alt="Frequency Framed"
-            style="display:block;margin:0 auto 18px;max-width:220px;height:auto;"
-          />
           <p style="margin:0;font-size:11px;letter-spacing:0.32em;text-transform:uppercase;color:#8b6f5d;">
             Frequency Framed
           </p>
@@ -199,20 +190,6 @@ function renderStatusEmailHtml({
           <p style="margin:28px 0 0;font-size:15px;line-height:1.8;color:#6c5445;">
             If you have any questions, simply reply to this email.
           </p>
-
-          <div style="margin-top:34px;padding-top:24px;border-top:1px solid #efe5da;">
-            <p style="margin:0 0 14px;font-size:15px;line-height:1.8;color:#6c5445;">
-              Thank you again for welcoming this piece into your space. I truly hope it brings beauty, presence, and meaning into your home.
-            </p>
-            <p style="margin:0 0 18px;font-size:15px;line-height:1.8;color:#6c5445;">
-              Warm regards,<br />Natan Ribeiro
-            </p>
-            <img
-              src="${signatureUrl}"
-              alt="Natan Ribeiro signature"
-              style="display:block;max-width:180px;height:auto;opacity:0.9;"
-            />
-          </div>
         </div>
       </div>
     </div>
@@ -280,81 +257,48 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
     let reviewUrl: string | null = null;
 
-    console.log("REVIEW DEBUG START", {
-      previousStatus,
-      nextStatus,
-      shippingEmail: updatedOrder.shipping_email,
-      itemsCount: items?.length ?? 0,
-      items,
-    });
+    const becameDelivered =
+      previousStatus !== "delivered" && updatedOrder.status === "delivered";
 
     if (
-      updatedOrder.status === "delivered" &&
+      becameDelivered &&
       updatedOrder.shipping_email &&
       items &&
       items.length > 0
     ) {
       const firstItemWithSlug = (items as OrderItem[]).find(
-        (item) => item.artwork_slug && item.artwork_slug.trim() !== ""
+        (item) => item.artwork_slug
       );
 
-      console.log("FIRST ITEM WITH SLUG", firstItemWithSlug);
-
       if (firstItemWithSlug?.artwork_slug) {
-        const { data: existingRequest, error: existingRequestError } =
-          await supabaseAdmin
-            .from("artwork_review_requests")
-            .select("*")
-            .eq("order_id", updatedOrder.id)
-            .eq("artwork_slug", firstItemWithSlug.artwork_slug)
-            .eq("customer_email", updatedOrder.shipping_email)
-            .maybeSingle();
-
-        console.log("EXISTING REQUEST", {
-          existingRequest,
-          existingRequestError,
-        });
+        const { data: existingRequest } = await supabaseAdmin
+          .from("artwork_review_requests")
+          .select("*")
+          .eq("order_id", updatedOrder.id)
+          .eq("artwork_slug", firstItemWithSlug.artwork_slug)
+          .eq("customer_email", updatedOrder.shipping_email)
+          .maybeSingle();
 
         if (existingRequest?.token) {
           reviewUrl = `${getSiteUrl()}/review/${existingRequest.token}`;
-          console.log("REUSING REVIEW URL", reviewUrl);
         } else {
           const token = randomUUID();
 
-          const { data: insertedRequest, error: reviewInsertError } =
-            await supabaseAdmin
-              .from("artwork_review_requests")
-              .insert({
-                order_id: updatedOrder.id,
-                artwork_slug: firstItemWithSlug.artwork_slug,
-                customer_email: updatedOrder.shipping_email,
-                token,
-              })
-              .select()
-              .single();
-
-          console.log("REVIEW INSERT RESULT", {
-            insertedRequest,
-            reviewInsertError,
-          });
+          const { error: reviewInsertError } = await supabaseAdmin
+            .from("artwork_review_requests")
+            .insert({
+              order_id: updatedOrder.id,
+              artwork_slug: firstItemWithSlug.artwork_slug,
+              customer_email: updatedOrder.shipping_email,
+              token,
+            });
 
           if (!reviewInsertError) {
             reviewUrl = `${getSiteUrl()}/review/${token}`;
-            console.log("CREATED REVIEW URL", reviewUrl);
           }
         }
-      } else {
-        console.log("NO ORDER ITEM WITH artwork_slug FOUND");
       }
-    } else {
-      console.log("REVIEW BLOCK SKIPPED", {
-        status: updatedOrder.status,
-        shippingEmail: updatedOrder.shipping_email,
-        itemsCount: items?.length ?? 0,
-      });
     }
-
-    console.log("FINAL reviewUrl", reviewUrl);
 
     if (updatedOrder.shipping_email) {
       const emailCopy = getStatusEmailCopy(updatedOrder.status);
@@ -399,11 +343,6 @@ ${trackingBlock}
 ${reviewBlock}
 
 If you have any questions, simply reply to this email.
-
-Thank you again for welcoming this piece into your space. I truly hope it brings beauty, presence, and meaning into your home.
-
-Warm regards,
-Natan Ribeiro
 
 Frequency Framed
         `,
