@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClientBrowser } from "@/lib/supabase-browser";
 
@@ -8,6 +8,12 @@ type Props = {
   params: Promise<{
     id: string;
   }>;
+};
+
+type ArtworkImage = {
+  id?: string;
+  image_url: string;
+  sort_order: number | null;
 };
 
 type Artwork = {
@@ -26,9 +32,15 @@ type Artwork = {
   featured: boolean;
   display_order: number | null;
   secondary_description: string | null;
-framing: string | null;
-is_home_hero: boolean;
-home_hero_order: number | null;
+  framing: string | null;
+  is_home_hero: boolean;
+  home_hero_order: number | null;
+  artwork_images?: ArtworkImage[];
+};
+
+type GalleryImageInput = {
+  image_url: string;
+  sort_order: number;
 };
 
 function slugify(value: string) {
@@ -43,6 +55,7 @@ function slugify(value: string) {
 export default function GalleryDetailPage({ params }: Props) {
   const router = useRouter();
   const supabase = useMemo(() => createClientBrowser(), []);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [artworkId, setArtworkId] = useState("");
   const [loading, setLoading] = useState(true);
@@ -62,12 +75,17 @@ export default function GalleryDetailPage({ params }: Props) {
   const [displayOrder, setDisplayOrder] = useState("");
   const [isPublished, setIsPublished] = useState(true);
   const [featured, setFeatured] = useState(false);
-  const [imageUrl, setImageUrl] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [secondaryDescription, setSecondaryDescription] = useState("");
-const [framing, setFraming] = useState("");
-const [isHomeHero, setIsHomeHero] = useState(false);
-const [homeHeroOrder, setHomeHeroOrder] = useState("");
+  const [framing, setFraming] = useState("");
+  const [isHomeHero, setIsHomeHero] = useState(false);
+  const [homeHeroOrder, setHomeHeroOrder] = useState("");
+
+  const [imageUrl, setImageUrl] = useState("");
+  const [existingGalleryImages, setExistingGalleryImages] = useState<
+    GalleryImageInput[]
+  >([]);
+  const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
+  const [newImagePreviewUrls, setNewImagePreviewUrls] = useState<string[]>([]);
 
   useEffect(() => {
     async function resolveParams() {
@@ -110,34 +128,99 @@ const [homeHeroOrder, setHomeHeroOrder] = useState("");
       setIsPublished(Boolean(artwork.is_published));
       setFeatured(Boolean(artwork.featured));
       setImageUrl(artwork.image_url || "");
-      setLoading(false);
       setIsHomeHero(Boolean(artwork.is_home_hero));
-setHomeHeroOrder(
-  artwork.home_hero_order == null ? "" : String(artwork.home_hero_order)
-);
+      setHomeHeroOrder(
+        artwork.home_hero_order == null ? "" : String(artwork.home_hero_order)
+      );
+
+      const sortedExistingImages =
+        artwork.artwork_images
+          ?.slice()
+          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+          .map((item, index) => ({
+            image_url: item.image_url,
+            sort_order: item.sort_order ?? index,
+          })) ?? [];
+
+      setExistingGalleryImages(sortedExistingImages);
+      setLoading(false);
     }
 
     fetchArtwork();
   }, [artworkId]);
 
-  async function uploadImage() {
-    if (!imageFile) return imageUrl || null;
+  useEffect(() => {
+    return () => {
+      newImagePreviewUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [newImagePreviewUrls]);
 
-    const cleanName = imageFile.name.replace(/\s+/g, "-").toLowerCase();
-    const filePath = `${Date.now()}-${cleanName}`;
+  function handleAddMoreImages(files: FileList | null) {
+    if (!files?.length) return;
 
-    const { error: uploadError } = await supabase.storage
-      .from("artworks")
-      .upload(filePath, imageFile, {
-        upsert: false,
+    const incomingFiles = Array.from(files);
+    const incomingPreviews = incomingFiles.map((file) => URL.createObjectURL(file));
+
+    setNewImageFiles((prev) => [...prev, ...incomingFiles]);
+    setNewImagePreviewUrls((prev) => [...prev, ...incomingPreviews]);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  }
+
+  async function uploadNewImages(): Promise<GalleryImageInput[]> {
+    if (!newImageFiles.length) return [];
+
+    const uploaded: GalleryImageInput[] = [];
+
+    for (let index = 0; index < newImageFiles.length; index += 1) {
+      const file = newImageFiles[index];
+      const cleanName = file.name.replace(/\s+/g, "-").toLowerCase();
+      const filePath = `${Date.now()}-${index}-${cleanName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("artworks")
+        .upload(filePath, file, {
+          upsert: false,
+        });
+
+      if (uploadError) {
+        throw new Error(uploadError.message);
+      }
+
+      const { data } = supabase.storage.from("artworks").getPublicUrl(filePath);
+
+      uploaded.push({
+        image_url: data.publicUrl,
+        sort_order: existingGalleryImages.length + index,
       });
-
-    if (uploadError) {
-      throw new Error(uploadError.message);
     }
 
-    const { data } = supabase.storage.from("artworks").getPublicUrl(filePath);
-    return data.publicUrl;
+    return uploaded;
+  }
+
+  function removeExistingGalleryImage(indexToRemove: number) {
+    setExistingGalleryImages((prev) =>
+      prev
+        .filter((_, index) => index !== indexToRemove)
+        .map((item, index) => ({
+          ...item,
+          sort_order: index,
+        }))
+    );
+  }
+
+  function removeNewImage(indexToRemove: number) {
+    const previewToRemove = newImagePreviewUrls[indexToRemove];
+    if (previewToRemove) {
+      URL.revokeObjectURL(previewToRemove);
+    }
+
+    setNewImageFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
+    setNewImagePreviewUrls((prev) =>
+      prev.filter((_, index) => index !== indexToRemove)
+    );
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -146,7 +229,18 @@ setHomeHeroOrder(
     setError("");
 
     try {
-      const finalImageUrl = await uploadImage();
+      const uploadedNewImages = await uploadNewImages();
+
+      const combinedGalleryImages = [
+        ...existingGalleryImages,
+        ...uploadedNewImages,
+      ].map((item, index) => ({
+        image_url: item.image_url,
+        sort_order: index,
+      }));
+
+      const coverImageUrl =
+        combinedGalleryImages[0]?.image_url || imageUrl || null;
 
       const response = await fetch(`/api/admin/artworks/${artworkId}`, {
         method: "PATCH",
@@ -154,25 +248,25 @@ setHomeHeroOrder(
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-  title,
-  slug: slug || slugify(title),
-  price_cents: Math.round(Number(price || 0) * 100),
-  status,
-  category,
-  description,
-  secondary_description: secondaryDescription,
-  medium,
-  dimensions,
-  year,
-  framing,
-  display_order: displayOrder,
-  is_published: isPublished,
-  featured,
-  is_home_hero: isHomeHero,
-home_hero_order: homeHeroOrder,
-  
-  image_url: finalImageUrl,
-}),
+          title,
+          slug: slug || slugify(title),
+          price_cents: Math.round(Number(price || 0) * 100),
+          status,
+          category,
+          description,
+          secondary_description: secondaryDescription,
+          medium,
+          dimensions,
+          year,
+          framing,
+          display_order: displayOrder,
+          is_published: isPublished,
+          featured,
+          is_home_hero: isHomeHero,
+          home_hero_order: homeHeroOrder,
+          image_url: coverImageUrl,
+          gallery_images: combinedGalleryImages,
+        }),
       });
 
       const data = await response.json();
@@ -248,7 +342,7 @@ home_hero_order: homeHeroOrder,
 
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="grid gap-6 lg:grid-cols-2">
-          <div className="border border-[#e7d9ca] bg-white p-6 space-y-5">
+          <div className="space-y-5 border border-[#e7d9ca] bg-white p-6">
             <div>
               <label className="block text-xs uppercase tracking-[0.18em] text-[#8b6f5d]">
                 Title
@@ -335,20 +429,21 @@ home_hero_order: homeHeroOrder,
                 className="mt-3 w-full border border-[#d8c6b5] px-4 py-3 outline-none"
               />
             </div>
-          </div>
-          <div>
-  <label className="block text-xs uppercase tracking-[0.18em] text-[#8b6f5d]">
-    Secondary Description
-  </label>
-  <textarea
-    value={secondaryDescription}
-    onChange={(e) => setSecondaryDescription(e.target.value)}
-    rows={5}
-    className="mt-3 w-full border border-[#d8c6b5] px-4 py-3 outline-none"
-  />
-</div>
 
-          <div className="border border-[#e7d9ca] bg-white p-6 space-y-5">
+            <div>
+              <label className="block text-xs uppercase tracking-[0.18em] text-[#8b6f5d]">
+                Secondary Description
+              </label>
+              <textarea
+                value={secondaryDescription}
+                onChange={(e) => setSecondaryDescription(e.target.value)}
+                rows={5}
+                className="mt-3 w-full border border-[#d8c6b5] px-4 py-3 outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-5 border border-[#e7d9ca] bg-white p-6">
             <div>
               <label className="block text-xs uppercase tracking-[0.18em] text-[#8b6f5d]">
                 Medium
@@ -395,57 +490,67 @@ home_hero_order: homeHeroOrder,
                 />
               </div>
             </div>
-            <div>
-  <label className="block text-xs uppercase tracking-[0.18em] text-[#8b6f5d]">
-    Framing
-  </label>
-  <input
-    value={framing}
-    onChange={(e) => setFraming(e.target.value)}
-    className="mt-3 w-full border border-[#d8c6b5] px-4 py-3 outline-none"
-  />
-</div>
 
             <div>
               <label className="block text-xs uppercase tracking-[0.18em] text-[#8b6f5d]">
-                Current Image URL
+                Framing
               </label>
               <input
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
+                value={framing}
+                onChange={(e) => setFraming(e.target.value)}
                 className="mt-3 w-full border border-[#d8c6b5] px-4 py-3 outline-none"
               />
             </div>
 
             <div>
               <label className="block text-xs uppercase tracking-[0.18em] text-[#8b6f5d]">
-                Replace Image
+                Gallery Images
               </label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                className="mt-3 block w-full"
-              />
+
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => handleAddMoreImages(e.target.files)}
+                  className="hidden"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="inline-flex items-center justify-center bg-[#4b3226] px-5 py-3 text-sm uppercase tracking-[0.16em] text-white transition hover:opacity-90"
+                >
+                  Add Images
+                </button>
+
+                <span className="text-xs uppercase tracking-[0.14em] text-[#8b6f5d]">
+                  Add one by one or select multiple at once
+                </span>
+              </div>
+
+              <p className="mt-3 text-xs text-[#8b6f5d]">
+                The first image in the gallery becomes the main cover image used across the site.
+              </p>
             </div>
 
-            <label className="flex items-center gap-3 text-sm">
-              <input
-                type="checkbox"
-                checked={isPublished}
-                onChange={(e) => setIsPublished(e.target.checked)}
-              />
-              Published on site
-            </label>
-
-                       <div className="space-y-3">
+            <div className="space-y-3">
               <label className="flex items-center gap-3 text-sm">
                 <input
                   type="checkbox"
                   checked={isPublished}
                   onChange={(e) => setIsPublished(e.target.checked)}
                 />
-               
+                Published on site
+              </label>
+
+              <label className="flex items-center gap-3 text-sm">
+                <input
+                  type="checkbox"
+                  checked={featured}
+                  onChange={(e) => setFeatured(e.target.checked)}
+                />
                 Featured artwork
               </label>
 
@@ -471,12 +576,87 @@ home_hero_order: homeHeroOrder,
               />
             </div>
 
+            {existingGalleryImages.length > 0 && (
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-[#8b6f5d]">
+                  Current Gallery
+                </p>
+
+                <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {existingGalleryImages.map((image, index) => (
+                    <div
+                      key={`${image.image_url}-${index}`}
+                      className="overflow-hidden border border-[#e7d9ca] bg-[#fbf8f4]"
+                    >
+                      <img
+                        src={image.image_url}
+                        alt={`Gallery ${index + 1}`}
+                        className="h-28 w-full object-cover"
+                      />
+                      <div className="space-y-2 border-t border-[#e7d9ca] px-3 py-2">
+                        <div className="text-[11px] uppercase tracking-[0.16em] text-[#8b6f5d]">
+                          {index === 0 ? "Cover Image" : `Gallery ${index + 1}`}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeExistingGalleryImage(index)}
+                          className="text-xs uppercase tracking-[0.16em] text-red-700"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {newImagePreviewUrls.length > 0 && (
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-[#8b6f5d]">
+                  New Images to Upload
+                </p>
+
+                <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {newImagePreviewUrls.map((preview, index) => (
+                    <div
+                      key={`${preview}-${index}`}
+                      className="overflow-hidden border border-[#e7d9ca] bg-[#fbf8f4]"
+                    >
+                      <img
+                        src={preview}
+                        alt={`New preview ${index + 1}`}
+                        className="h-28 w-full object-cover"
+                      />
+                      <div className="space-y-2 border-t border-[#e7d9ca] px-3 py-2">
+                        <div className="text-[11px] uppercase tracking-[0.16em] text-[#8b6f5d]">
+                          New image {index + 1}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeNewImage(index)}
+                          className="text-xs uppercase tracking-[0.16em] text-red-700"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {imageUrl ? (
-              <img
-                src={imageUrl}
-                alt={title}
-                className="mt-3 max-h-72 border border-[#e7d9ca] object-cover"
-              />
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-[#8b6f5d]">
+                  Main Cover Preview
+                </p>
+                <img
+                  src={imageUrl}
+                  alt={title}
+                  className="mt-3 max-h-72 border border-[#e7d9ca] object-cover"
+                />
+              </div>
             ) : null}
           </div>
         </div>

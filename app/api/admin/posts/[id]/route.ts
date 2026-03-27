@@ -87,3 +87,29 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     );
   }
 }
+
+export async function DELETE(_request: NextRequest, context: RouteContext) {
+  try {
+    const { id } = await context.params;
+
+    const { error } = await supabaseAdmin
+      .from("posts")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      return NextResponse.json(
+        { error: error.message || "Failed to delete post." },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Admin post DELETE error:", error);
+    return NextResponse.json(
+      { error: "Something went wrong while deleting the post." },
+      { status: 500 }
+    );
+  }
+}

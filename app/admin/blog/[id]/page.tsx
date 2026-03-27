@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClientBrowser } from "@/lib/supabase-browser";
 import TiptapEditor from "@/components/admin/TiptapEditor";
@@ -30,9 +30,11 @@ export default function EditBlogPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const supabase = useMemo(() => createClientBrowser(), []);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
 
   const [title, setTitle] = useState("");
@@ -140,20 +142,60 @@ export default function EditBlogPage() {
     }
   }
 
+  async function handleDelete() {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this post?"
+    );
+
+    if (!confirmed) return;
+
+    setDeleting(true);
+    setError("");
+
+    try {
+      const response = await fetch(`/api/admin/posts/${params.id}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to delete post.");
+      }
+
+      router.push("/admin/blog");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete post.");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   if (loading) {
     return <div className="text-[#4b3226]">Loading post...</div>;
   }
-  
 
   return (
     <div className="space-y-8 text-[#4b3226]">
-      <div>
-        <p className="text-xs uppercase tracking-[0.28em] text-[#8b6f5d]">
-          Blog Management
-        </p>
-        <h1 className="mt-4 text-5xl leading-none tracking-[-0.03em]">
-          Edit Post
-        </h1>
+      <div className="flex items-end justify-between gap-6">
+        <div>
+          <p className="text-xs uppercase tracking-[0.28em] text-[#8b6f5d]">
+            Blog Management
+          </p>
+          <h1 className="mt-4 text-5xl leading-none tracking-[-0.03em]">
+            Edit Post
+          </h1>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={deleting}
+          className="inline-flex items-center justify-center border border-red-700 px-6 py-4 text-sm uppercase tracking-[0.18em] text-red-700 transition hover:bg-red-700 hover:text-white disabled:opacity-60"
+        >
+          {deleting ? "Deleting..." : "Delete Post"}
+        </button>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
@@ -220,14 +262,30 @@ export default function EditBlogPage() {
 
             <div>
               <label className="block text-xs uppercase tracking-[0.18em] text-[#8b6f5d]">
-                Upload Cover Image
+                Cover Image
               </label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setCoverFile(e.target.files?.[0] || null)}
-                className="mt-3 block w-full"
-              />
+
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setCoverFile(e.target.files?.[0] || null)}
+                  className="hidden"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="inline-flex items-center justify-center bg-[#4b3226] px-5 py-3 text-sm uppercase tracking-[0.16em] text-white transition hover:opacity-90"
+                >
+                  Choose File
+                </button>
+
+                <span className="text-xs uppercase tracking-[0.14em] text-[#8b6f5d]">
+                  {coverFile ? coverFile.name : "No file selected"}
+                </span>
+              </div>
             </div>
 
             <div className="space-y-3">
@@ -261,6 +319,19 @@ export default function EditBlogPage() {
                 className="mt-3 w-full border border-[#d8c6b5] px-4 py-3 outline-none"
               />
             </div>
+
+            {coverImageUrl ? (
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-[#8b6f5d]">
+                  Current Cover Preview
+                </p>
+                <img
+                  src={coverImageUrl}
+                  alt={title}
+                  className="mt-3 max-h-72 border border-[#e7d9ca] object-cover"
+                />
+              </div>
+            ) : null}
           </div>
         </div>
 

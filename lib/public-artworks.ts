@@ -1,5 +1,11 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
+export type PublicArtworkImage = {
+  id: string;
+  image_url: string;
+  sort_order: number | null;
+};
+
 export type PublicArtwork = {
   id: string;
   slug: string;
@@ -19,8 +25,8 @@ export type PublicArtwork = {
   is_home_hero: boolean;
   home_hero_order: number | null;
   display_order: number | null;
+  artwork_images?: PublicArtworkImage[];
 };
-
 
 export async function getHomepageHeroArtworks(): Promise<PublicArtwork[]> {
   const { data, error } = await supabaseAdmin
@@ -38,6 +44,7 @@ export async function getHomepageHeroArtworks(): Promise<PublicArtwork[]> {
 
   return (data ?? []) as PublicArtwork[];
 }
+
 export async function getPublishedArtworks(): Promise<PublicArtwork[]> {
   const { data, error } = await supabaseAdmin
     .from("artworks")
@@ -77,7 +84,14 @@ export async function getPublishedArtworkBySlug(
 ): Promise<PublicArtwork | null> {
   const { data, error } = await supabaseAdmin
     .from("artworks")
-    .select("*")
+    .select(`
+      *,
+      artwork_images (
+        id,
+        image_url,
+        sort_order
+      )
+    `)
     .eq("slug", slug)
     .eq("is_published", true)
     .single();
