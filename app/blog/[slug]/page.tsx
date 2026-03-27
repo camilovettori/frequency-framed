@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import Container from "@/components/ui/container";
 import { getPublishedPostBySlug } from "@/lib/public-posts";
@@ -110,9 +111,53 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               dangerouslySetInnerHTML={{ __html: contentHtml }}
             />
           </div>
+
+          <div className="mt-20 border-t border-[var(--border)]/70 pt-12">
+  {/* Signature Line */}
+  <p className="text-[15px] leading-7 text-[var(--muted)]">
+    Art is not just seen — it is felt.
+  </p>
+
+  {/* Author */}
+  <p className="mt-6 text-[10px] uppercase tracking-[0.24em] text-[var(--muted)]">
+    Written by
+  </p>
+
+  <p className="mt-2 text-lg leading-8 text-[var(--foreground)]">
+    Natan Ribeiro
+  </p>
+
+  {/* Signature */}
+  <div className="mt-6">
+    <div className="relative h-28 w-[320px] md:h-36 md:w-[420px]">
+      <Image
+        src="/images/natan-signature.png"
+        alt="Natan Ribeiro signature"
+        fill
+        className="object-contain object-left opacity-85 mix-blend-multiply"
+      />
+    </div>
+  </div>
+
+  {/* Links */}
+  <div className="mt-8 flex flex-wrap gap-6 text-xs uppercase tracking-[0.22em]">
+    <a
+      href="/about"
+      className="text-[var(--muted)] transition hover:text-[var(--foreground)]"
+    >
+      About the artist
+    </a>
+
+    <a
+      href="/gallery"
+      className="text-[var(--muted)] transition hover:text-[var(--foreground)]"
+    >
+      View collection
+    </a>
+  </div>
+</div>
         </article>
       </Container>
-
     </main>
   );
 }
