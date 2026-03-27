@@ -19,55 +19,55 @@ export default function Footer() {
 
           <div className="grid gap-10 sm:grid-cols-3 md:justify-items-end">
             <div className="space-y-4">
-              <p className="text-[11px] uppercase tracking-[0.24em] text-[var(--muted)]">
-                Explore
-              </p>
+  <p className="text-[11px] uppercase tracking-[0.24em] text-[var(--muted)]">
+    Explore
+  </p>
 
-              <div className="flex flex-col gap-3 text-sm">
-                <Link
-                  href="/blog"
-                  className="opacity-70 transition hover:text-[var(--foreground)] hover:opacity-100"
-                >
-                  Journal
-                </Link>
+  <div className="flex flex-col gap-3 text-sm">
+    <Link
+      href="/blog"
+      className="opacity-70 transition hover:text-[var(--foreground)] hover:opacity-100"
+    >
+      Journal
+    </Link>
 
-                <Link
-                  href="/reviews"
-                  className="opacity-70 transition hover:text-[var(--foreground)] hover:opacity-100"
-                >
-                  Reviews
-                </Link>
+    <Link
+      href="/reviews"
+      className="opacity-70 transition hover:text-[var(--foreground)] hover:opacity-100"
+    >
+      Reviews
+    </Link>
+  </div>
+</div>
 
-                <Link
-                  href="/faq"
-                  className="opacity-70 transition hover:text-[var(--foreground)] hover:opacity-100"
-                >
-                  FAQ
-                </Link>
+<div className="space-y-4">
+  <p className="text-[11px] uppercase tracking-[0.24em] text-[var(--muted)]">
+    Support
+  </p>
 
-                <Link
-                  href="/contact"
-                  className="opacity-70 transition hover:text-[var(--foreground)] hover:opacity-100"
-                >
-                  Contact
-                </Link>
-              </div>
-            </div>
+  <div className="flex flex-col gap-3 text-sm">
+    <Link
+      href="/shipping-returns"
+      className="opacity-70 transition hover:text-[var(--foreground)] hover:opacity-100"
+    >
+      Shipping & Returns
+    </Link>
 
-            <div className="space-y-4">
-              <p className="text-[11px] uppercase tracking-[0.24em] text-[var(--muted)]">
-                Support
-              </p>
+    <Link
+      href="/faq"
+      className="opacity-70 transition hover:text-[var(--foreground)] hover:opacity-100"
+    >
+      FAQ
+    </Link>
 
-              <div className="flex flex-col gap-3 text-sm">
-                <Link
-                  href="/shipping-returns"
-                  className="opacity-70 transition hover:text-[var(--foreground)] hover:opacity-100"
-                >
-                  Shipping & Returns
-                </Link>
-              </div>
-            </div>
+    <Link
+      href="/contact"
+      className="opacity-70 transition hover:text-[var(--foreground)] hover:opacity-100"
+    >
+      Contact
+    </Link>
+  </div>
+</div>
 
             <div className="space-y-4">
               <p className="text-[11px] uppercase tracking-[0.24em] text-[var(--muted)]">
