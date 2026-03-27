@@ -7,6 +7,8 @@ import ArtworkGallery from "@/components/artwork/ArtworkGallery";
 import { getPublishedArtworkBySlug } from "@/lib/public-artworks";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
+export const dynamic = "force-dynamic";
+
 type ArtworkPageProps = {
   params: Promise<{
     slug: string;

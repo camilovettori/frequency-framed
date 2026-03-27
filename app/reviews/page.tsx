@@ -3,6 +3,8 @@ import Link from "next/link";
 import Container from "@/components/ui/container";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
+export const dynamic = "force-dynamic";
+
 type ReviewRecord = {
   id: string;
   reviewer_name: string;
