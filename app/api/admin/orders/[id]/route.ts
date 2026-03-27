@@ -104,7 +104,6 @@ function renderStatusEmailHtml({
   <div style="margin:0;padding:0;background:#f7f2ec;font-family:Arial,Helvetica,sans-serif;color:#3d2b22;">
     <div style="max-width:640px;margin:0 auto;padding:40px 20px;">
       <div style="background:#ffffff;border:1px solid #eadfd3;padding:40px 32px;box-shadow:0 12px 30px rgba(0,0,0,0.04);">
-        
         <div style="text-align:center;padding-bottom:24px;border-bottom:1px solid #efe5da;">
           <img
             src="${logoUrl}"
@@ -246,6 +245,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       .eq("order_id", id);
 
     if (itemsError) {
+      console.error("ORDER ITEMS ERROR:", itemsError);
       return NextResponse.json(
         { error: "Failed to load order items." },
         { status: 500 }
@@ -272,6 +272,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       .single();
 
     if (updateError || !updatedOrder) {
+      console.error("ORDER UPDATE ERROR:", updateError);
       return NextResponse.json(
         { error: "Failed to update order." },
         { status: 500 }
@@ -283,6 +284,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     console.log("REVIEW DEBUG START", {
       previousStatus,
       nextStatus,
+      updatedStatus: updatedOrder.status,
       shippingEmail: updatedOrder.shipping_email,
       itemsCount: items?.length ?? 0,
       items,
@@ -310,6 +312,10 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
             .eq("customer_email", updatedOrder.shipping_email)
             .maybeSingle();
 
+        if (existingRequestError) {
+          console.error("EXISTING REQUEST ERROR:", existingRequestError);
+        }
+
         console.log("EXISTING REQUEST", {
           existingRequest,
           existingRequestError,
@@ -333,13 +339,17 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
               .select()
               .single();
 
+          if (reviewInsertError) {
+            console.error("REVIEW INSERT ERROR:", reviewInsertError);
+          }
+
           console.log("REVIEW INSERT RESULT", {
             insertedRequest,
             reviewInsertError,
           });
 
-          if (!reviewInsertError) {
-            reviewUrl = `${getSiteUrl()}/review/${token}`;
+          if (!reviewInsertError && insertedRequest?.token) {
+            reviewUrl = `${getSiteUrl()}/review/${insertedRequest.token}`;
             console.log("CREATED REVIEW URL", reviewUrl);
           }
         }
@@ -348,7 +358,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       }
     } else {
       console.log("REVIEW BLOCK SKIPPED", {
-        status: updatedOrder.status,
+        updatedStatus: updatedOrder.status,
         shippingEmail: updatedOrder.shipping_email,
         itemsCount: items?.length ?? 0,
       });

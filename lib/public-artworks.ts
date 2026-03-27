@@ -11,8 +11,9 @@ export type PublicArtworkReview = {
   reviewer_name: string;
   reviewer_role: string | null;
   review_text: string;
-  sort_order: number | null;
+  rating: number | null;
   is_published: boolean;
+  created_at: string | null;
 };
 
 export type PublicArtwork = {
@@ -106,8 +107,9 @@ export async function getPublishedArtworkBySlug(
         reviewer_name,
         reviewer_role,
         review_text,
-        sort_order,
-        is_published
+        rating,
+        is_published,
+        created_at
       )
     `)
     .eq("slug", slug)
@@ -129,7 +131,11 @@ export async function getPublishedArtworkBySlug(
   if (artwork.artwork_reviews) {
     artwork.artwork_reviews = artwork.artwork_reviews
       .filter((review) => review.is_published)
-      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+      .sort((a, b) => {
+        const aDate = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const bDate = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return bDate - aDate;
+      });
   }
 
   return artwork;

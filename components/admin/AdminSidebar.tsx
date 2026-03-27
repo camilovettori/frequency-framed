@@ -4,8 +4,8 @@ const navItems = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/orders", label: "Orders" },
   { href: "/admin/gallery", label: "Gallery Management" },
+  { href: "/admin/reviews", label: "Reviews" },
   { href: "/admin/blog", label: "Blog" },
-  
 ];
 
 export default function AdminSidebar() {

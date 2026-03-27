@@ -32,6 +32,13 @@ export default function Footer() {
                 </Link>
 
                 <Link
+                  href="/reviews"
+                  className="opacity-70 transition hover:text-[var(--foreground)] hover:opacity-100"
+                >
+                  Reviews
+                </Link>
+
+                <Link
                   href="/faq"
                   className="opacity-70 transition hover:text-[var(--foreground)] hover:opacity-100"
                 >

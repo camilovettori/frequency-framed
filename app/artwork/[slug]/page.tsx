@@ -5,11 +5,27 @@ import Container from "@/components/ui/container";
 import AddToCartButton from "@/components/AddToCartButton";
 import ArtworkGallery from "@/components/artwork/ArtworkGallery";
 import { getPublishedArtworkBySlug } from "@/lib/public-artworks";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
 type ArtworkPageProps = {
   params: Promise<{
     slug: string;
   }>;
+};
+
+type RecentReview = {
+  id: string;
+  reviewer_name: string;
+  reviewer_role: string | null;
+  review_text: string;
+  rating: number | null;
+  created_at: string | null;
+  artworks: {
+    title: string;
+    slug: string;
+    is_published: boolean | null;
+    image_url: string | null;
+  } | null;
 };
 
 export async function generateMetadata(
@@ -62,6 +78,19 @@ function getStatusBadge(status: string) {
   }
 }
 
+function formatReviewDate(value?: string | null) {
+  if (!value) return null;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+
+  return new Intl.DateTimeFormat("en-IE", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+}
+
 export default async function ArtworkPage({ params }: ArtworkPageProps) {
   const { slug } = await params;
   const artwork = await getPublishedArtworkBySlug(slug);
@@ -69,6 +98,45 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
   if (!artwork) {
     notFound();
   }
+
+  const { data: recentReviewsRaw } = await supabaseAdmin
+    .from("artwork_reviews")
+    .select(`
+      id,
+      reviewer_name,
+      reviewer_role,
+      review_text,
+      rating,
+      created_at,
+      artworks:artwork_id (
+        title,
+        slug,
+        is_published,
+        image_url
+      )
+    `)
+    .eq("is_published", true)
+    .order("created_at", { ascending: false })
+    .limit(4);
+
+  const recentReviews: RecentReview[] = (recentReviewsRaw ?? []).map(
+    (item: any) => ({
+      id: item.id,
+      reviewer_name: item.reviewer_name,
+      reviewer_role: item.reviewer_role,
+      review_text: item.review_text,
+      rating: item.rating,
+      created_at: item.created_at,
+      artworks: item.artworks
+        ? {
+            title: item.artworks.title,
+            slug: item.artworks.slug,
+            is_published: item.artworks.is_published,
+            image_url: item.artworks.image_url,
+          }
+        : null,
+    })
+  );
 
   const availabilityLabel = getAvailabilityLabel(artwork.status);
   const statusBadge = getStatusBadge(artwork.status);
@@ -197,42 +265,115 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
           </div>
         </section>
       </Container>
-{artwork.artwork_reviews && artwork.artwork_reviews.length > 0 && (
-  <section className="mt-20 border-t border-[var(--border)]/70 pt-12">
-    <Container>
-      <div className="max-w-4xl">
-        <p className="text-xs uppercase tracking-[0.28em] text-[var(--muted)]">
-          Collector Reflections
-        </p>
 
-        <div className="mt-10 space-y-10">
-          {artwork.artwork_reviews.map((review) => (
-            <div key={review.id} className="space-y-4">
-              <p className="text-[18px] md:text-[20px] leading-[1.6] text-[var(--foreground)]">
-                “{review.review_text}”
-              </p>
+      {recentReviews.length > 0 && (
+        <section className="mt-20 border-t border-[var(--border)]/70 pt-12">
+          <Container>
+            <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
+              <div className="max-w-xl">
+                <p className="text-xs uppercase tracking-[0.28em] text-[var(--muted)]">
+                  Collector Reflections
+                </p>
 
-              <div className="text-sm text-[var(--muted)]">
-                <span className="block font-medium text-[var(--foreground)]">
-                  {review.reviewer_name}
-                </span>
+                <h2 className="mt-4 text-3xl leading-[1.02] tracking-[-0.03em] text-[var(--foreground)] md:text-5xl">
+                  What collectors are saying
+                </h2>
 
-                {review.reviewer_role && (
-                  <span className="block text-xs uppercase tracking-[0.18em]">
-                    {review.reviewer_role}
-                  </span>
-                )}
+                <p className="mt-5 text-[17px] leading-[1.8] text-[var(--muted)] md:text-[18px]">
+                  Recent reflections from collectors who have welcomed
+                  Frequency Framed artworks into their homes and spaces.
+                </p>
+              </div>
+
+              <div className="lg:pt-3">
+                <Link
+                  href="/reviews"
+                  className="text-xs uppercase tracking-[0.22em] text-[var(--muted)] transition hover:text-[var(--foreground)]"
+                >
+                  View all reviews
+                </Link>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
-    </Container>
-  </section>
-)}
 
+            <div className="mt-12 grid gap-6 md:grid-cols-2">
+              {recentReviews.map((review) => {
+                const reviewArtworkLink =
+                  review.artworks?.is_published && review.artworks?.slug
+                    ? `/artwork/${review.artworks.slug}`
+                    : null;
 
+                return (
+                  <article
+                    key={review.id}
+                    className="flex h-full flex-col border border-[var(--border)] bg-white p-6 shadow-[0_12px_35px_rgba(0,0,0,0.04)]"
+                  >
+                    <div className="flex items-start gap-5">
+                      <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-sm border border-[var(--border)] bg-[#f5f1eb]">
+                        {review.artworks?.image_url ? (
+                          <img
+                            src={review.artworks.image_url}
+                            alt={review.artworks.title || review.reviewer_name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : null}
+                      </div>
 
+                      <div className="min-w-0">
+                        {review.artworks?.title ? (
+                          <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--muted)]">
+                            {review.artworks.title}
+                          </p>
+                        ) : null}
+
+                        {review.rating ? (
+                          <p className="mt-3 text-sm tracking-[0.14em] text-[var(--foreground)]">
+                            {"★".repeat(review.rating)}
+                          </p>
+                        ) : null}
+
+                        {formatReviewDate(review.created_at) ? (
+                          <p className="mt-3 text-xs uppercase tracking-[0.16em] text-[var(--muted)]">
+                            {formatReviewDate(review.created_at)}
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    <div className="mt-6 flex-1">
+                      <p className="text-[18px] leading-[1.8] text-[var(--foreground)] md:text-[20px]">
+                        “{review.review_text}”
+                      </p>
+                    </div>
+
+                    <div className="mt-8 border-t border-[var(--border)] pt-5">
+                      <p className="text-lg text-[var(--foreground)]">
+                        {review.reviewer_name}
+                      </p>
+
+                      {review.reviewer_role ? (
+                        <p className="mt-1 text-[11px] uppercase tracking-[0.2em] text-[var(--muted)]">
+                          {review.reviewer_role}
+                        </p>
+                      ) : null}
+
+                      {reviewArtworkLink ? (
+                        <div className="mt-5">
+                          <Link
+                            href={reviewArtworkLink}
+                            className="text-xs uppercase tracking-[0.2em] text-[var(--muted)] transition hover:text-[var(--foreground)]"
+                          >
+                            View related artwork
+                          </Link>
+                        </div>
+                      ) : null}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </Container>
+        </section>
+      )}
     </main>
   );
 }
