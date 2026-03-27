@@ -1,379 +1,120 @@
-import { NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
-import { randomUUID } from "crypto";
+import Image from "next/image";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import Container from "@/components/ui/container";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import ReviewForm from "./ReviewForm";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-type RouteContext = {
+type PageProps = {
   params: Promise<{
-    id: string;
+    token: string;
   }>;
 };
 
-type OrderItem = {
-  id: string;
-  order_id: string;
-  artwork_slug: string | null;
-  title: string | null;
-  price_cents: number | null;
-};
+export default async function ReviewPage({ params }: PageProps) {
+  const { token } = await params;
 
-function formatMoney(cents: number, currency: string) {
-  return new Intl.NumberFormat("en-IE", {
-    style: "currency",
-    currency: currency.toUpperCase(),
-  }).format(cents / 100);
-}
+  const { data: requestData, error: requestError } = await supabaseAdmin
+    .from("artwork_review_requests")
+    .select("*")
+    .eq("token", token)
+    .maybeSingle();
 
-function getStatusEmailCopy(status: string) {
-  switch (status) {
-    case "processing":
-      return {
-        subject: "Your Frequency Framed order is now processing",
-        message:
-          "We have started preparing your order and will notify you again once it has been dispatched.",
-      };
-
-    case "dispatched":
-      return {
-        subject: "Your Frequency Framed order has been dispatched",
-        message:
-          "Your order is now on its way. If tracking details are available, you can find them below.",
-      };
-
-    case "delivered":
-      return {
-        subject: "Your Frequency Framed order has been delivered",
-        message:
-          "Your order has been marked as delivered. Thank you again for your purchase.",
-      };
-
-    case "cancelled":
-      return {
-        subject: "Your Frequency Framed order has been cancelled",
-        message:
-          "Your order has been marked as cancelled. If you have any questions, please contact us.",
-      };
-
-    default:
-      return {
-        subject: "Your Frequency Framed order has been updated",
-        message:
-          "There has been an update to your order status. Please see the details below.",
-      };
+  if (requestError || !requestData) {
+    notFound();
   }
-}
 
-function getSiteUrl() {
-  return (
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    process.env.NEXT_PUBLIC_APP_URL ||
-    "https://frequencyframed.ie"
-  ).replace(/\/$/, "");
-}
+  const { data: artwork, error: artworkError } = await supabaseAdmin
+    .from("artworks")
+    .select("id, title, slug, image_url")
+    .eq("slug", requestData.artwork_slug)
+    .maybeSingle();
 
-function renderStatusEmailHtml({
-  customerName,
-  message,
-  orderNumber,
-  total,
-  status,
-  trackingNumber,
-  carrier,
-  trackingUrl,
-  reviewUrl,
-}: {
-  customerName: string;
-  message: string;
-  orderNumber: string;
-  total: string;
-  status: string;
-  trackingNumber?: string | null;
-  carrier?: string | null;
-  trackingUrl?: string | null;
-  reviewUrl?: string | null;
-}) {
-  const showTracking = status === "dispatched";
-  const showReview = status === "delivered" && Boolean(reviewUrl);
+  if (artworkError || !artwork) {
+    notFound();
+  }
 
-  return `
-  <div style="margin:0;padding:0;background:#f7f2ec;font-family:Arial,Helvetica,sans-serif;color:#3d2b22;">
-    <div style="max-width:640px;margin:0 auto;padding:40px 20px;">
-      <div style="background:#ffffff;border:1px solid #eadfd3;padding:40px 32px;box-shadow:0 12px 30px rgba(0,0,0,0.04);">
-        <div style="text-align:center;padding-bottom:24px;border-bottom:1px solid #efe5da;">
-          <p style="margin:0;font-size:11px;letter-spacing:0.32em;text-transform:uppercase;color:#8b6f5d;">
-            Frequency Framed
-          </p>
-          <h1 style="margin:18px 0 0;font-size:30px;line-height:1.05;font-weight:500;color:#4b3226;">
-            Order Update
-          </h1>
-        </div>
-
-        <div style="padding-top:28px;">
-          <p style="margin:0 0 18px;font-size:16px;line-height:1.8;color:#6c5445;">
-            Hello ${customerName},
-          </p>
-
-          <p style="margin:0 0 18px;font-size:16px;line-height:1.8;color:#6c5445;">
-            ${message}
-          </p>
-
-          <div style="margin:28px 0;padding:22px;background:#fbf8f4;border:1px solid #efe5da;">
-            <p style="margin:0 0 10px;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:#8b6f5d;">
-              Order Summary
+  if (requestData.used) {
+    return (
+      <main className="pt-20 pb-24 md:pt-24 md:pb-32">
+        <Container>
+          <div className="mx-auto max-w-3xl border border-[var(--border)] bg-white px-8 py-12 text-center shadow-[0_12px_35px_rgba(0,0,0,0.04)]">
+            <p className="text-xs uppercase tracking-[0.28em] text-[var(--muted)]">
+              Frequency Framed
             </p>
-            <p style="margin:0 0 8px;font-size:15px;line-height:1.7;color:#4b3226;">
-              <strong>Order number:</strong> ${orderNumber}
-            </p>
-            <p style="margin:0 0 8px;font-size:15px;line-height:1.7;color:#4b3226;">
-              <strong>Total:</strong> ${total}
-            </p>
-            <p style="margin:0;font-size:15px;line-height:1.7;color:#4b3226;text-transform:capitalize;">
-              <strong>Status:</strong> ${status}
-            </p>
-          </div>
 
-          ${
-            showTracking
-              ? `
-            <div style="margin:28px 0;padding:22px;background:#fbf8f4;border:1px solid #efe5da;">
-              <p style="margin:0 0 10px;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:#8b6f5d;">
-                Tracking Details
-              </p>
-              <p style="margin:0 0 8px;font-size:15px;line-height:1.7;color:#4b3226;">
-                <strong>Tracking number:</strong> ${trackingNumber || "N/A"}
-              </p>
-              <p style="margin:0 0 8px;font-size:15px;line-height:1.7;color:#4b3226;">
-                <strong>Carrier:</strong> ${carrier || "N/A"}
-              </p>
-              ${
-                trackingUrl
-                  ? `
-                <div style="margin-top:16px;">
-                  <a
-                    href="${trackingUrl}"
-                    style="display:inline-block;background:#4b3226;color:#ffffff;text-decoration:none;padding:14px 22px;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;"
-                  >
-                    Track Order
-                  </a>
-                </div>
-              `
-                  : ""
-              }
-            </div>
-          `
-              : ""
-          }
+            <h1 className="mt-6 text-4xl leading-[0.95] tracking-[-0.03em] text-[var(--foreground)] md:text-5xl">
+              Review Already Submitted
+            </h1>
 
-          ${
-            showReview
-              ? `
-            <div style="margin:28px 0;padding:26px;background:#fbf8f4;border:1px solid #efe5da;">
-              <p style="margin:0 0 10px;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:#8b6f5d;">
-                A Small Request
-              </p>
-              <p style="margin:0 0 16px;font-size:15px;line-height:1.8;color:#6c5445;">
-                Thank you again for supporting independent art. We truly hope you love your new piece. If you have a moment, we would be grateful if you shared a few words about your experience.
-              </p>
-              <a
-                href="${reviewUrl}"
-                style="display:inline-block;background:#4b3226;color:#ffffff;text-decoration:none;padding:14px 24px;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;"
+            <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-[var(--muted)]">
+              Thank you for taking the time to share your thoughts. Your review
+              has already been received.
+            </p>
+
+            <div className="mt-10">
+              <Link
+                href={`/artwork/${artwork.slug}`}
+                className="inline-flex items-center justify-center bg-[var(--foreground)] px-7 py-4 text-sm uppercase tracking-[0.16em] text-white transition-all duration-300 hover:opacity-90"
               >
-                Leave a Review
-              </a>
+                View Artwork
+              </Link>
             </div>
-          `
-              : ""
-          }
-
-          <p style="margin:28px 0 0;font-size:15px;line-height:1.8;color:#6c5445;">
-            If you have any questions, simply reply to this email.
-          </p>
-        </div>
-      </div>
-    </div>
-  </div>
-  `;
-}
-
-export async function PATCH(request: NextRequest, context: RouteContext) {
-  try {
-    const { id } = await context.params;
-    const body = await request.json();
-
-    const status = body.status as string;
-    const tracking_number = body.tracking_number as string | null;
-    const tracking_url = body.tracking_url as string | null;
-    const carrier = body.carrier as string | null;
-
-    const { data: order, error: fetchError } = await supabaseAdmin
-      .from("orders")
-      .select("*")
-      .eq("id", id)
-      .single();
-
-    if (fetchError || !order) {
-      return NextResponse.json({ error: "Order not found." }, { status: 404 });
-    }
-
-    const { data: items, error: itemsError } = await supabaseAdmin
-      .from("order_items")
-      .select("*")
-      .eq("order_id", id);
-
-    if (itemsError) {
-      return NextResponse.json(
-        { error: "Failed to load order items." },
-        { status: 500 }
-      );
-    }
-
-    const previousStatus = order.status || "";
-    const nextStatus = status || previousStatus;
-
-    const shouldOpenShippingLabel =
-      previousStatus !== "dispatched" && nextStatus === "dispatched";
-
-    const { data: updatedOrder, error: updateError } = await supabaseAdmin
-      .from("orders")
-      .update({
-        status: nextStatus,
-        tracking_number: tracking_number || null,
-        tracking_url: tracking_url || null,
-        carrier: carrier || null,
-        status_updated_at: new Date().toISOString(),
-      })
-      .eq("id", id)
-      .select("*")
-      .single();
-
-    if (updateError || !updatedOrder) {
-      return NextResponse.json(
-        { error: "Failed to update order." },
-        { status: 500 }
-      );
-    }
-
-    let reviewUrl: string | null = null;
-
-    const becameDelivered =
-      previousStatus !== "delivered" && updatedOrder.status === "delivered";
-
-    if (
-      becameDelivered &&
-      updatedOrder.shipping_email &&
-      items &&
-      items.length > 0
-    ) {
-      const firstItemWithSlug = (items as OrderItem[]).find(
-        (item) => item.artwork_slug
-      );
-
-      if (firstItemWithSlug?.artwork_slug) {
-        const { data: existingRequest } = await supabaseAdmin
-          .from("artwork_review_requests")
-          .select("*")
-          .eq("order_id", updatedOrder.id)
-          .eq("artwork_slug", firstItemWithSlug.artwork_slug)
-          .eq("customer_email", updatedOrder.shipping_email)
-          .maybeSingle();
-
-        if (existingRequest?.token) {
-          reviewUrl = `${getSiteUrl()}/review/${existingRequest.token}`;
-        } else {
-          const token = randomUUID();
-
-          const { error: reviewInsertError } = await supabaseAdmin
-            .from("artwork_review_requests")
-            .insert({
-              order_id: updatedOrder.id,
-              artwork_slug: firstItemWithSlug.artwork_slug,
-              customer_email: updatedOrder.shipping_email,
-              token,
-            });
-
-          if (!reviewInsertError) {
-            reviewUrl = `${getSiteUrl()}/review/${token}`;
-          }
-        }
-      }
-    }
-
-    if (updatedOrder.shipping_email) {
-      const emailCopy = getStatusEmailCopy(updatedOrder.status);
-
-      const trackingBlock =
-        updatedOrder.status === "dispatched"
-          ? `
-Tracking number: ${updatedOrder.tracking_number || "N/A"}
-Carrier: ${updatedOrder.carrier || "N/A"}
-Tracking link: ${updatedOrder.tracking_url || "N/A"}
-          `
-          : "";
-
-      const reviewBlock = reviewUrl
-        ? `
-We hope you love your new artwork.
-
-If you have a moment, we would be truly grateful if you shared a few words about your piece:
-${reviewUrl}
-          `
-        : "";
-
-      await resend.emails.send({
-        from: "Frequency Framed <hello@frequencyframed.ie>",
-        to: updatedOrder.shipping_email,
-        subject: emailCopy.subject,
-        text: `
-Hello ${updatedOrder.shipping_full_name || "there"},
-
-${emailCopy.message}
-
-Order number: ${updatedOrder.order_number || updatedOrder.id}
-Total: ${formatMoney(
-          updatedOrder.amount_total_cents,
-          updatedOrder.currency
-        )}
-
-Status: ${updatedOrder.status}
-
-${trackingBlock}
-
-${reviewBlock}
-
-If you have any questions, simply reply to this email.
-
-Frequency Framed
-        `,
-        html: renderStatusEmailHtml({
-          customerName: updatedOrder.shipping_full_name || "there",
-          message: emailCopy.message,
-          orderNumber: updatedOrder.order_number || updatedOrder.id,
-          total: formatMoney(
-            updatedOrder.amount_total_cents,
-            updatedOrder.currency
-          ),
-          status: updatedOrder.status,
-          trackingNumber: updatedOrder.tracking_number,
-          carrier: updatedOrder.carrier,
-          trackingUrl: updatedOrder.tracking_url,
-          reviewUrl,
-        }),
-      });
-    }
-
-    return NextResponse.json({
-      success: true,
-      order: updatedOrder,
-      should_open_shipping_label: shouldOpenShippingLabel,
-    });
-  } catch (error) {
-    console.error("Admin order update error:", error);
-
-    return NextResponse.json(
-      { error: "Something went wrong while updating the order." },
-      { status: 500 }
+          </div>
+        </Container>
+      </main>
     );
   }
+
+  return (
+    <main className="pt-20 pb-24 md:pt-24 md:pb-32">
+      <Container>
+        <div className="mx-auto grid max-w-5xl items-start gap-10 lg:grid-cols-[0.88fr_1.12fr] lg:gap-14">
+          <div>
+            <div className="overflow-hidden rounded-sm border border-[var(--border)] bg-white shadow-[0_12px_35px_rgba(0,0,0,0.05)]">
+              {artwork.image_url ? (
+                <Image
+                  src={artwork.image_url}
+                  alt={artwork.title}
+                  width={1000}
+                  height={1200}
+                  className="h-auto w-full object-cover"
+                />
+              ) : (
+                <div className="aspect-[4/5] bg-[#f5f1eb]" />
+              )}
+            </div>
+          </div>
+
+          <div className="max-w-xl">
+            <p className="text-xs uppercase tracking-[0.28em] text-[var(--muted)]">
+              Collector Reflection
+            </p>
+
+            <h1 className="mt-6 text-4xl leading-[0.95] tracking-[-0.03em] text-[var(--foreground)] md:text-6xl">
+              Share Your Experience
+            </h1>
+
+            <p className="mt-8 text-lg leading-[1.8] text-[var(--muted)] md:text-[20px]">
+              Thank you for supporting independent art. We hope your new piece
+              has brought presence, meaning, and beauty into your space.
+            </p>
+
+            <div className="mt-8 border-t border-[var(--border)] pt-6">
+              <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--muted)]">
+                Artwork
+              </p>
+              <p className="mt-2 text-2xl leading-tight text-[var(--foreground)]">
+                {artwork.title}
+              </p>
+            </div>
+
+            <div className="mt-10">
+              <ReviewForm token={token} artworkSlug={artwork.slug} />
+            </div>
+          </div>
+        </div>
+      </Container>
+    </main>
+  );
 }
