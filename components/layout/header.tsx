@@ -55,7 +55,7 @@ export default function Header() {
             </Link>
           </nav>
 
-          <nav className="flex w-full items-center justify-center gap-4 border-t border-[var(--border)] pt-4 text-[10px] uppercase tracking-[0.08em] text-[var(--muted)] md:hidden">
+          <nav className="flex w-full items-center justify-center gap-3 border-t border-[var(--border)] pt-4 text-[11.5px] uppercase tracking-[0.06em] text-[var(--muted)] md:hidden">
             <Link
               href="/about"
               className="transition-colors duration-300 hover:text-[var(--foreground)]"
