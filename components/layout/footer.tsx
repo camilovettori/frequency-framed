@@ -134,7 +134,7 @@ export default function Footer() {
             rel="noopener noreferrer"
             className="transition hover:text-[var(--foreground)]"
           >
-            Developed by Lumon
+            Developed by Ziffera.ie
           </a>
         </div>
       </Container>
