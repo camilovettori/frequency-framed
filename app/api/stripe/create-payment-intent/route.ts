@@ -25,31 +25,98 @@ type CheckoutPayload = {
   };
 };
 
-type ArtworkRow = {
+type ReservedArtwork = {
   id: string;
   slug: string;
   title: string;
   price_cents: number;
   image_url: string | null;
-  status: "available" | "sold" | "reserved";
-  is_published: boolean | null;
 };
+
+type ReservationRow = {
+  reservation_id: string;
+  reserved_until: string;
+  amount_cents: number;
+  currency: string;
+  items: ReservedArtwork[] | string | null;
+};
+
+type ReservationResponseItem = {
+  id: string;
+  slug: string;
+  title: string;
+  price_cents: number;
+  image_url: string | null;
+};
+
+const RESERVATION_MINUTES = 15;
 
 function unique(values: string[]) {
   return [...new Set(values)];
 }
 
-export async function POST(request: Request) {
-  try {
-    const body = (await request.json()) as CheckoutPayload;
+function normalizeString(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
 
-    if (!body.items || body.items.length === 0) {
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function parseReservationItems(items: ReservationRow["items"]) {
+  if (Array.isArray(items)) {
+    return items as ReservedArtwork[];
+  }
+
+  if (typeof items === "string") {
+    try {
+      const parsed = JSON.parse(items) as unknown;
+
+      if (Array.isArray(parsed)) {
+        return parsed as ReservedArtwork[];
+      }
+    } catch {
+      return [];
+    }
+  }
+
+  return [];
+}
+
+async function releaseReservation(reservationId: string) {
+  const { error } = await supabaseAdmin.rpc("release_artwork_reservation", {
+    p_reservation_id: reservationId,
+  });
+
+  if (error) {
+    console.error("Failed to release artwork reservation:", {
+      reservationId,
+      error,
+    });
+  }
+}
+
+export async function POST(request: Request) {
+  let body: CheckoutPayload;
+
+  try {
+    body = (await request.json()) as CheckoutPayload;
+  } catch (error) {
+    console.error("Invalid JSON payload for checkout:", error);
+
+    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+  }
+
+  try {
+    const items = Array.isArray(body.items) ? body.items : [];
+
+    if (items.length === 0) {
       return NextResponse.json({ error: "Cart is empty." }, { status: 400 });
     }
 
     const ids = unique(
-      body.items
-        .map((item) => item.id?.trim())
+      items
+        .map((item) => normalizeString(item?.id))
         .filter((value): value is string => Boolean(value))
     );
 
@@ -60,85 +127,207 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data: artworks, error } = await supabaseAdmin
-      .from("artworks")
-      .select("id, slug, title, price_cents, image_url, status, is_published")
-      .in("id", ids);
+    const customer = body.customer || ({} as CheckoutPayload["customer"]);
 
-    if (error) {
-      console.error("Supabase artworks fetch error:", error);
+    const firstName = normalizeString(customer.firstName);
+    const lastName = normalizeString(customer.lastName);
+    const email = normalizeString(customer.email);
+    const phone = normalizeString(customer.phone);
+    const addressLine1 = normalizeString(customer.addressLine1);
+    const addressLine2 = normalizeString(customer.addressLine2);
+    const city = normalizeString(customer.city);
+    const county = normalizeString(customer.county);
+    const postalCode = normalizeString(customer.postalCode);
+    const country = normalizeString(customer.country);
+
+    if (!firstName || !lastName) {
       return NextResponse.json(
-        { error: "Failed to validate artworks." },
+        { error: "Customer first and last name are required." },
+        { status: 400 }
+      );
+    }
+
+    if (!email || !isValidEmail(email)) {
+      return NextResponse.json(
+        { error: "A valid customer email is required." },
+        { status: 400 }
+      );
+    }
+
+    if (!addressLine1 || !city || !postalCode || !country) {
+      return NextResponse.json(
+        { error: "A complete delivery address is required." },
+        { status: 400 }
+      );
+    }
+
+    const customerFullName = `${firstName} ${lastName}`.trim();
+
+    const { data: reservationData, error: reservationError } =
+      await supabaseAdmin.rpc("reserve_artworks_for_checkout", {
+        p_artwork_ids: ids,
+        p_customer_email: email,
+        p_customer_full_name: customerFullName,
+        p_customer_first_name: firstName,
+        p_customer_last_name: lastName,
+        p_customer_phone: phone || null,
+        p_shipping_address_line1: addressLine1,
+        p_shipping_address_line2: addressLine2 || null,
+        p_shipping_city: city,
+        p_shipping_county: county || null,
+        p_shipping_postal_code: postalCode,
+        p_shipping_country: country,
+        p_reservation_minutes: RESERVATION_MINUTES,
+      });
+
+    if (reservationError) {
+      console.error("Artwork reservation failed:", reservationError);
+
+      const reservationMessage = reservationError.message.toLowerCase();
+      const isConflict =
+        reservationMessage.includes("available") ||
+        reservationMessage.includes("reserve") ||
+        reservationMessage.includes("published") ||
+        reservationMessage.includes("status") ||
+        reservationError.code === "P0001";
+
+      return NextResponse.json(
+        {
+          error: isConflict
+            ? "One or more artworks are no longer available."
+            : "Failed to reserve artworks.",
+        },
+        { status: isConflict ? 409 : 500 }
+      );
+    }
+
+    const reservationRows = Array.isArray(reservationData)
+      ? (reservationData as ReservationRow[])
+      : reservationData
+      ? [reservationData as ReservationRow]
+      : [];
+
+    const reservation = reservationRows[0];
+
+    if (!reservation?.reservation_id || !reservation?.reserved_until) {
+      console.error("Reservation RPC returned no reservation payload.", {
+        reservationData,
+      });
+
+      return NextResponse.json(
+        { error: "Failed to reserve artworks." },
         { status: 500 }
       );
     }
 
-    const rows = (artworks ?? []) as ArtworkRow[];
+    const reservedItems = parseReservationItems(reservation.items);
 
-    if (rows.length !== ids.length) {
-      const foundIds = new Set(rows.map((row) => row.id));
-      const missingIds = ids.filter((id) => !foundIds.has(id));
+    if (reservedItems.length === 0) {
+      console.error("Reservation RPC returned no reserved items.", {
+        reservationId: reservation.reservation_id,
+        reservationData,
+      });
+
+      await releaseReservation(reservation.reservation_id);
 
       return NextResponse.json(
-        {
-          error: `Some artworks were not found: ${missingIds.join(", ")}`,
-        },
-        { status: 400 }
+        { error: "Failed to reserve artworks." },
+        { status: 500 }
       );
     }
 
-    const unavailable = rows.filter(
-      (row) => row.status !== "available" || row.is_published !== true
-    );
-
-    if (unavailable.length > 0) {
-      return NextResponse.json(
-        {
-          error: `This artwork is no longer available: ${unavailable
-            .map((row) => row.title)
-            .join(", ")}`,
-        },
-        { status: 400 }
-      );
-    }
-
-    const amountCents = rows.reduce((acc, row) => acc + row.price_cents, 0);
+    const amountCents =
+      Number(reservation.amount_cents) ||
+      reservedItems.reduce((acc, row) => acc + Number(row.price_cents || 0), 0);
 
     if (!amountCents || amountCents <= 0) {
-      return NextResponse.json({ error: "Invalid amount." }, { status: 400 });
+      console.error("Reservation returned an invalid amount.", {
+        reservationId: reservation.reservation_id,
+        amountCents,
+      });
+
+      await releaseReservation(reservation.reservation_id);
+
+      return NextResponse.json(
+        { error: "Failed to reserve artworks." },
+        { status: 500 }
+      );
     }
 
-    const customerFullName =
-      `${body.customer.firstName || ""} ${body.customer.lastName || ""}`.trim();
+    const currency = normalizeString(reservation.currency).toLowerCase() || "eur";
 
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: amountCents,
-      currency: "eur",
-      automatic_payment_methods: {
-        enabled: true,
-      },
-      receipt_email: body.customer.email || undefined,
-      metadata: {
-        customer_first_name: body.customer.firstName || "",
-        customer_last_name: body.customer.lastName || "",
-        customer_full_name: customerFullName,
-        customer_email: body.customer.email || "",
-        customer_phone: body.customer.phone || "",
-        shipping_address_1: body.customer.addressLine1 || "",
-        shipping_address_2: body.customer.addressLine2 || "",
-        shipping_city: body.customer.city || "",
-        shipping_county: body.customer.county || "",
-        shipping_postal_code: body.customer.postalCode || "",
-        shipping_country: body.customer.country || "",
-        item_ids: rows.map((row) => row.id).join(","),
-        item_slugs: rows.map((row) => row.slug).join(","),
-        item_titles: rows.map((row) => row.title).join(" | "),
-      },
-    });
+    let paymentIntentId: string | null = null;
 
-    return NextResponse.json({
-      clientSecret: paymentIntent.client_secret,
-    });
+    try {
+      const paymentIntent = await stripe.paymentIntents.create(
+        {
+          amount: amountCents,
+          currency,
+          automatic_payment_methods: {
+            enabled: true,
+          },
+          receipt_email: email,
+          metadata: {
+            reservation_id: reservation.reservation_id,
+            reserved_until: reservation.reserved_until,
+            customer_first_name: firstName,
+            customer_last_name: lastName,
+            customer_full_name: customerFullName,
+            customer_email: email,
+            customer_phone: phone,
+            shipping_address_1: addressLine1,
+            shipping_address_2: addressLine2,
+            shipping_city: city,
+            shipping_county: county,
+            shipping_postal_code: postalCode,
+            shipping_country: country,
+            item_ids: reservedItems.map((row) => row.id).join(","),
+            item_slugs: reservedItems.map((row) => row.slug).join(","),
+            item_titles: reservedItems.map((row) => row.title).join(" | "),
+            reservation_minutes: String(RESERVATION_MINUTES),
+          },
+        },
+        {
+          idempotencyKey: reservation.reservation_id,
+        }
+      );
+
+      paymentIntentId = paymentIntent.id;
+
+      return NextResponse.json({
+        clientSecret: paymentIntent.client_secret,
+        reservationId: reservation.reservation_id,
+        reservedUntil: reservation.reserved_until,
+        amountCents,
+        currency,
+        items: reservedItems.map((item): ReservationResponseItem => ({
+          id: item.id,
+          slug: item.slug,
+          title: item.title,
+          price_cents: item.price_cents,
+          image_url: item.image_url,
+        })),
+      });
+    } catch (stripeError) {
+      console.error("Failed to create Stripe PaymentIntent:", {
+        reservationId: reservation.reservation_id,
+        reservationData,
+        stripeError,
+      });
+
+      await releaseReservation(reservation.reservation_id);
+
+      return NextResponse.json(
+        { error: "Failed to create payment intent." },
+        { status: 500 }
+      );
+    } finally {
+      if (!paymentIntentId) {
+        console.warn("PaymentIntent was not created for reservation.", {
+          reservationId: reservation.reservation_id,
+        });
+      }
+    }
   } catch (error) {
     console.error("create-payment-intent error:", error);
 
