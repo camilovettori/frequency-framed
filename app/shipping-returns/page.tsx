@@ -43,6 +43,8 @@ export default function ShippingReturnsPage() {
                 before finalising any purchase or commission.
               </p>
 
+              <p>Orders are dispatched within up to 5 business days.</p>
+
               <p>
                 International shipping may be available upon request. Please
                 enquire before purchasing to confirm availability and estimated
