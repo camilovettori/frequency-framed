@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import {
+  ExpressCheckoutElement,
   PaymentElement,
   useElements,
   useStripe,
@@ -31,12 +32,21 @@ export default function StripeCheckoutForm({
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function confirmWithElements() {
     if (!stripe || !elements) return;
 
     setIsSubmitting(true);
     setErrorMessage("");
+
+    const submitResult = await elements.submit();
+
+    if (submitResult.error) {
+      setErrorMessage(
+        submitResult.error.message || "Please complete the payment form."
+      );
+      setIsSubmitting(false);
+      return;
+    }
 
     const result = await stripe.confirmPayment({
       elements,
@@ -47,6 +57,31 @@ export default function StripeCheckoutForm({
             name: `${billingDetails.firstName} ${billingDetails.lastName}`.trim(),
             email: billingDetails.email,
             phone: billingDetails.phone,
+            address: {
+              line1: billingDetails.addressLine1,
+              line2: billingDetails.addressLine2 || undefined,
+              city: billingDetails.city,
+              state: billingDetails.county,
+              postal_code: billingDetails.postalCode,
+              country:
+                billingDetails.country === "Ireland"
+                  ? "IE"
+                  : billingDetails.country === "United Kingdom"
+                  ? "GB"
+                  : billingDetails.country === "Portugal"
+                  ? "PT"
+                  : billingDetails.country === "Brazil"
+                  ? "BR"
+                  : billingDetails.country === "Spain"
+                  ? "ES"
+                  : billingDetails.country === "France"
+                  ? "FR"
+                  : billingDetails.country === "Germany"
+                  ? "DE"
+                  : billingDetails.country === "Italy"
+                  ? "IT"
+                  : "IE",
+            },
           },
         },
       },
@@ -59,18 +94,106 @@ export default function StripeCheckoutForm({
       return;
     }
 
-    if (result.paymentIntent?.status === "succeeded") {
-      window.location.href = "/success";
+    const paymentIntent = result.paymentIntent;
+
+    if (!paymentIntent) {
+      setErrorMessage("Payment could not be confirmed. Please try again.");
+      setIsSubmitting(false);
       return;
     }
 
-    setIsSubmitting(false);
+    switch (paymentIntent.status) {
+      case "succeeded":
+        window.location.href = "/success";
+        return;
+
+      case "processing":
+        setErrorMessage(
+          "Your payment is processing. Please wait a moment and check again."
+        );
+        setIsSubmitting(false);
+        return;
+
+      case "requires_payment_method":
+        setErrorMessage(
+          "Payment method was not completed. Please re-enter your card details and try again."
+        );
+        setIsSubmitting(false);
+        return;
+
+      case "requires_action":
+        setErrorMessage(
+          "Additional authentication is required. Please follow the next step."
+        );
+        setIsSubmitting(false);
+        return;
+
+      default:
+        setErrorMessage(`Unexpected payment status: ${paymentIntent.status}`);
+        setIsSubmitting(false);
+        return;
+    }
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await confirmWithElements();
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="border border-[var(--border)] bg-white p-5">
-        <PaymentElement />
+        <ExpressCheckoutElement
+          options={{
+            buttonHeight: 48,
+            buttonType: {
+              applePay: "check-out",
+              googlePay: "checkout",
+            },
+            buttonTheme: {
+              applePay: "black",
+              googlePay: "black",
+            },
+            paymentMethods: {
+              applePay: "always",
+              googlePay: "always",
+              link: "never",
+              paypal: "never",
+              amazonPay: "never",
+              klarna: "never",
+            },
+            layout: {
+              maxColumns: 2,
+              maxRows: 1,
+              overflow: "never",
+            },
+          }}
+          onConfirm={async () => {
+            await confirmWithElements();
+          }}
+        />
+      </div>
+
+      <div className="border border-[var(--border)] bg-white p-5">
+        <PaymentElement
+          options={{
+            wallets: {
+              applePay: "never",
+              googlePay: "never",
+            },
+            terms: {
+              card: "never",
+            },
+            fields: {
+              billingDetails: {
+                name: "never",
+                email: "never",
+                phone: "never",
+                address: "never",
+              },
+            },
+          }}
+        />
       </div>
 
       <button
