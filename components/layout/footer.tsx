@@ -136,7 +136,7 @@ export default function Footer() {
           <p>© {new Date().getFullYear()} Frequency Framed. All rights reserved.</p>
 
           <a
-            href="https://ziffera.vercel.app/start"
+            href="https://ziffera.ie/start"
             target="_blank"
             rel="noopener noreferrer"
             className="transition hover:text-[var(--foreground)]"
