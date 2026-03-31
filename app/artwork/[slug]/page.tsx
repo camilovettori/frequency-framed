@@ -226,6 +226,28 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
                   {artwork.framing || "Available on request"}
                 </p>
               </div>
+
+              {artwork.dimensions ? (
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+                    Dimensions
+                  </p>
+                  <p className="mt-2 text-[var(--foreground)]">
+                    {artwork.dimensions}
+                  </p>
+                </div>
+              ) : null}
+
+              {artwork.year ? (
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+                    Year
+                  </p>
+                  <p className="mt-2 text-[var(--foreground)]">
+                    {artwork.year}
+                  </p>
+                </div>
+              ) : null}
             </div>
 
             <div className="mt-12 flex flex-wrap gap-4">
